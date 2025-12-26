@@ -1,11 +1,12 @@
 
+
 export enum UserRole {
-  STUDENT = 'Student',
-  YEAR_LEADER = 'Year Leader',
-  FACULTY_ADMIN = 'Faculty Admin',
-  FINANCE_OFFICER = 'Finance Officer',
-  REGISTRAR = 'Registrar',
-  SYSTEM_ADMIN = 'System Admin'
+  STUDENT = 'STUDENT',
+  YEAR_LEADER = 'YEAR_LEADER',
+  FACULTY_ADMIN = 'FACULTY_ADMIN',
+  FINANCE_OFFICER = 'FINANCE_OFFICER',
+  REGISTRAR = 'REGISTRAR',
+  SYSTEM_ADMIN = 'SYSTEM_ADMIN'
 }
 
 export type Faculty = 'Faculty of Design Innovation' | 'Faculty of Multimedia Creativity' | 'Faculty of Information Technology' | 'Faculty of Business Management';
@@ -45,10 +46,13 @@ export interface RegistrationSubmission {
   id: string;
   studentId: string;
   studentName: string;
-  faculty: Faculty;
+  studentEmail: string;
+  faculty: Faculty | string;
+  program: string;
   semester: string;
   academicYear: string;
-  modules: Module[];
+  yearLevel: number;
+  modules: Module[] | string[];
   status: RegistrationStatus;
   submittedAt: string;
   approvalHistory: {

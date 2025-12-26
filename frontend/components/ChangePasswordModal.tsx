@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 
 interface ChangePasswordModalProps {
-  onPasswordChanged: () => void;
+  onPasswordChanged: (newPassword: string) => void;
   isFirstLogin?: boolean;
+  onClose?: () => void;
 }
 
 const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onPasswordChanged, isFirstLogin = false }) => {
@@ -55,7 +56,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onPasswordCha
       return;
     }
 
-    onPasswordChanged();
+    onPasswordChanged(newPassword);
   };
 
   const strengthLabels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
@@ -131,9 +132,8 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onPasswordCha
               type={showPassword ? 'text' : 'password'}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`w-full p-3 border text-sm focus:outline-none focus:ring-2 focus:ring-black ${
-                confirmPassword && confirmPassword !== newPassword ? 'border-gray-400' : 'border-black'
-              }`}
+              className={`w-full p-3 border text-sm focus:outline-none focus:ring-2 focus:ring-black ${confirmPassword && confirmPassword !== newPassword ? 'border-gray-400' : 'border-black'
+                }`}
               placeholder="Confirm new password"
             />
             {confirmPassword && confirmPassword !== newPassword && (

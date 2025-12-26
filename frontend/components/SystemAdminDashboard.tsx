@@ -164,11 +164,10 @@ const SystemAdminDashboard: React.FC = () => {
             <button
               key={section}
               onClick={() => setActiveSection(section)}
-              className={`px-6 py-3 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors ${
-                activeSection === section
+              className={`px-6 py-3 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors ${activeSection === section
                   ? 'border-black text-black'
                   : 'border-transparent text-gray-400 hover:text-gray-600'
-              }`}
+                }`}
             >
               {section}
             </button>
@@ -179,24 +178,24 @@ const SystemAdminDashboard: React.FC = () => {
       {activeSection === 'overview' && (
         <div className="space-y-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            <StatCard 
-              label="Total Users" 
-              value={MOCK_STATS.totalUsers.toString()} 
+            <StatCard
+              label="Total Users"
+              value={MOCK_STATS.totalUsers.toString()}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
             />
-            <StatCard 
-              label="Active Students" 
+            <StatCard
+              label="Active Students"
               value={MOCK_STATS.activeStudents.toString()}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
             />
-            <StatCard 
-              label="Staff" 
-              value={MOCK_STATS.staffMembers.toString()} 
+            <StatCard
+              label="Staff"
+              value={MOCK_STATS.staffMembers.toString()}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
             />
-            <StatCard 
-              label="Pending" 
-              value={MOCK_STATS.pendingRegistrations.toString()} 
+            <StatCard
+              label="Pending"
+              value={MOCK_STATS.pendingRegistrations.toString()}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
             />
           </div>
@@ -253,8 +252,8 @@ const SystemAdminDashboard: React.FC = () => {
                       <span className="text-xs font-mono font-bold">{[312, 287, 245, 198][index]}</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-black rounded-full transition-all duration-1000" 
+                      <div
+                        className="h-full bg-black rounded-full transition-all duration-1000"
                         style={{ width: `${[100, 92, 78, 63][index]}%` }}
                       />
                     </div>
@@ -274,11 +273,10 @@ const SystemAdminDashboard: React.FC = () => {
                 <button
                   key={filter}
                   onClick={() => setAuditFilter(filter)}
-                  className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${
-                    auditFilter === filter
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${auditFilter === filter
                       ? 'bg-black text-white border-black'
                       : 'bg-white border-gray-200 hover:border-gray-400 text-gray-600'
-                  }`}
+                    }`}
                 >
                   {filter}
                 </button>
@@ -298,9 +296,9 @@ const SystemAdminDashboard: React.FC = () => {
             </div>
           </div>
 
-          <Table 
-            columns={auditColumns} 
-            data={filteredLogs} 
+          <Table
+            columns={auditColumns}
+            data={filteredLogs}
             emptyMessage="No audit logs found matching your criteria"
           />
 
@@ -319,12 +317,11 @@ const SystemAdminDashboard: React.FC = () => {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h4 className="text-sm font-bold uppercase tracking-widest mb-4">User Management</h4>
             <p className="text-sm text-gray-500 mb-6">
-              User accounts are created by the Registrar department. System Admins can view and manage existing accounts.
+              System Administrators are responsible for creating and managing staff accounts (Registrar, Finance, Faculty Admin, and Year Leaders). Student accounts are managed exclusively by the Registrar department.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button variant="outline" fullWidth>View All Users</Button>
-              <Button variant="outline" fullWidth>Locked Accounts</Button>
-              <Button variant="outline" fullWidth>Export User List</Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button variant="outline" fullWidth onClick={() => setActiveSection('users')}>Manage Staff Roles</Button>
+              <Button variant="outline" fullWidth>Security Audit</Button>
             </div>
           </div>
 

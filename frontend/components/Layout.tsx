@@ -47,7 +47,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
 
       {/* Mobile Menu Overlay */}
       {user && mobileMenuOpen && (
-        <div 
+        <div
           className="md:hidden fixed inset-0 bg-black/50 z-30 backdrop-blur-sm transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
         />
@@ -63,61 +63,61 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
           ${!sidebarVisible ? 'md:-ml-72' : ''}
         `}>
           <div className="p-6 flex flex-col items-center border-b border-gray-800">
-             <img src={limlogo} className="w-auto h-16 mb-4 filter drop-shadow-lg" alt="Limkokwing University Logo" />
-             <div className="text-center">
-               <h3 className="text-sm font-bold uppercase tracking-widest text-white">{user.name}</h3>
-               <p className="text-[10px] uppercase tracking-wide text-gray-400 mt-1">{user.role}</p>
-             </div>
+            <img src={limlogo} className="w-auto h-16 mb-4 filter drop-shadow-lg" alt="Limkokwing University Logo" />
+            <div className="text-center">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-white">{user.name}</h3>
+              <p className="text-[10px] uppercase tracking-wide text-gray-400 mt-1">{user.role}</p>
+            </div>
           </div>
-          
+
           <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
             <div className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-gray-500">Navigation</div>
-            <NavItem 
-              label="Dashboard" 
-              active={activePage === 'dashboard'} 
+            <NavItem
+              label="Dashboard"
+              active={activePage === 'dashboard'}
               onClick={() => handleNavigate('dashboard')}
               icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>}
             />
-            <NavItem 
-              label="My Profile" 
+            <NavItem
+              label="My Profile"
               active={activePage === 'profile'}
               onClick={() => handleNavigate('profile')}
               icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
             />
             {(user.role === UserRole.REGISTRAR || user.role === UserRole.SYSTEM_ADMIN) && (
-              <NavItem 
-                label="Create Account" 
+              <NavItem
+                label={user.role === UserRole.SYSTEM_ADMIN ? "Manage System Accounts" : "Create Account"}
                 active={activePage === 'accounts'}
                 onClick={() => handleNavigate('accounts')}
                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>}
               />
             )}
             {user.role === UserRole.REGISTRAR ? (
-              <NavItem 
-                label="Student Accounts" 
+              <NavItem
+                label="Student Accounts"
                 active={activePage === 'approvals'}
                 onClick={() => handleNavigate('approvals')}
                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
               />
             ) : user.role !== UserRole.STUDENT && (
-              <NavItem 
-                label="Approvals" 
+              <NavItem
+                label="Approvals"
                 active={activePage === 'approvals'}
                 onClick={() => handleNavigate('approvals')}
                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
               />
             )}
-            <NavItem 
-              label="Notifications" 
+            <NavItem
+              label="Notifications"
               active={activePage === 'notifications'}
               onClick={() => handleNavigate('notifications')}
               badge={notificationCount > 0 ? notificationCount : undefined}
               icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>}
             />
           </nav>
-          
+
           <div className="p-4 border-t border-gray-800">
-            <button 
+            <button
               onClick={onLogout}
               className="group w-full flex items-center justify-center py-3 px-4 border border-gray-700 hover:bg-white hover:border-white transition-all rounded-lg"
             >
@@ -149,7 +149,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
                 </h2>
               </div>
               <div className="flex items-center space-x-6">
-                 {/* Notification Bell */}
+                {/* Notification Bell */}
                 <button
                   className="relative group p-2 rounded-full hover:bg-gray-100 transition-colors"
                   onClick={() => handleNavigate('notifications')}
@@ -165,7 +165,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
                 </button>
               </div>
             </header>
-            
+
             <div className="flex-1 overflow-auto overflow-x-hidden bg-gray-50 scroll-smooth">
               <div className="p-4 md:p-8 max-w-7xl mx-auto w-full">
                 {children}
@@ -187,12 +187,12 @@ interface NavItemProps {
 }
 
 const NavItem: React.FC<NavItemProps> = ({ label, active, onClick, badge, icon }) => (
-  <button 
+  <button
     onClick={onClick}
     className={`
       w-full text-left py-3 px-4 flex items-center justify-between transition-all duration-200 rounded-lg mb-1 group
-      ${active 
-        ? 'bg-white text-black shadow-md translate-x-1' 
+      ${active
+        ? 'bg-white text-black shadow-md translate-x-1'
         : 'text-gray-400 hover:bg-gray-900 hover:text-white hover:translate-x-1'
       }
     `}
