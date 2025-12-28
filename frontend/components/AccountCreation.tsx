@@ -1,73 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, User } from '../types';
-// import { createUserAccount } from '../services/auth.service';
-// import { getFaculties, getProgramsByFaculty } from '../services/data.service';
+import { UserRole, User, FacultyType, ProgramType as Program } from '../types';
+import {
+  createStaffAccount,
+  createStudentAccount,
+  getFaculties,
+  getProgramsByFaculty
+} from '../services/admin.service';
 // import { sendStudentCredentialsEmail, SendStudentCredentialsPayload } from '../services/notification.service';
-// import type { Faculty as FacultyType, Program } from '../services/data.service';
-
-interface FacultyType {
-  id: string;
-  name: string;
-}
-
-interface Program {
-  id: string;
-  name: string;
-  facultyId: string;
-}
-
-interface SendStudentCredentialsPayload {
-  email: string;
-  fullName: string;
-  studentId: string;
-  temporaryPassword: string;
-}
-
-// Mock services
-const mockCreateUserAccount = async (data: any) => {
-  console.log('Mock account creation:', data);
-  return { success: true, user: { id: Math.random().toString(), ...data }, error: null };
-};
-
-const mockGetFaculties = async () => {
-  return {
-    success: true,
-    faculties: [
-      { id: '1', name: 'Faculty of Information Technology' },
-      { id: '2', name: 'Faculty of Business Management' },
-      { id: '3', name: 'Faculty of Design Innovation' },
-      { id: '4', name: 'Faculty of Multimedia Creativity' }
-    ]
-  };
-};
-
-const mockGetProgramsByFaculty = async (facultyId: string) => {
-  const programs: Record<string, Program[]> = {
-    '1': [
-      { id: 'p1', name: 'BSc in Software Engineering', facultyId: '1' },
-      { id: 'p2', name: 'BSc in Computer Science', facultyId: '1' }
-    ],
-    '2': [
-      { id: 'p3', name: 'BA in Business Management', facultyId: '2' },
-      { id: 'p4', name: 'BA in Accounting', facultyId: '2' }
-    ],
-    '3': [
-      { id: 'p5', name: 'BA in Fashion Design', facultyId: '3' },
-      { id: 'p6', name: 'BA in Interior Architecture', facultyId: '3' }
-    ],
-    '4': [
-      { id: 'p7', name: 'BA in Multimedia Creativity', facultyId: '4' },
-      { id: 'p8', name: 'BA in Animation', facultyId: '4' }
-    ]
-  };
-  return { success: true, programs: programs[facultyId] || [] };
-};
-
-const mockSendStudentCredentialsEmail = async (payload: SendStudentCredentialsPayload) => {
-  console.log('Mock email sending:', payload);
-  return { success: true };
-};
 
 
 interface AccountCreationProps {
@@ -124,7 +64,7 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
   }, [selectedFacultyId, role]);
 
   const loadFaculties = async () => {
-    const result = await mockGetFaculties();
+    const result = await getFaculties();
     if (result.success && result.faculties) {
       setFaculties(result.faculties);
       if (result.faculties.length > 0) {
@@ -134,7 +74,7 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
   };
 
   const loadPrograms = async (facultyId: string) => {
-    const result = await mockGetProgramsByFaculty(facultyId);
+    const result = await getProgramsByFaculty(facultyId);
     if (result.success && result.programs) {
       setPrograms(result.programs);
       if (result.programs.length > 0) {
@@ -158,11 +98,11 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
     return password;
   };
 
-  const sendCredentialsByEmail = async (payload: SendStudentCredentialsPayload) => {
+  const sendCredentialsByEmail = async (payload: any) => {
     setIsEmailSending(true);
     try {
-      await mockSendStudentCredentialsEmail(payload);
-      setEmailStatusMessage(`Credentials have been emailed to ${payload.email}.`);
+      // await mockSendStudentCredentialsEmail(payload);
+      setEmailStatusMessage(`Credentials ready for ${payload.email}.`);
     } catch (error: any) {
       console.error('Failed to email credentials:', error);
       setEmailStatusMessage(
@@ -205,7 +145,7 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
     setLoading(true);
 
     try {
-      const result = await mockCreateUserAccount({
+      const accountData = {
         email,
         fullName: name,
         role: role,
@@ -215,8 +155,12 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
         facultyId: selectedFacultyId || undefined,
         programId: selectedProgramId || undefined,
         currentYear: role === UserRole.STUDENT ? currentYear : undefined,
-        temporaryPassword,
-      });
+        password: temporaryPassword,
+      };
+
+      const result = role === UserRole.STUDENT
+        ? await createStudentAccount(accountData)
+        : await createStaffAccount(accountData);
 
       if (result.success && result.user) {
         setCreatedCredentials({

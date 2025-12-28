@@ -23,71 +23,37 @@ interface SystemStats {
   lastBackup: string;
 }
 
-const MOCK_AUDIT_LOGS: AuditLog[] = [
-  {
-    id: '1',
-    action: 'ACCOUNT_CREATED',
-    performedBy: 'John Registrar',
-    role: UserRole.REGISTRAR,
-    targetUser: 'Alex Rivera',
-    details: 'Created student account with ID S1001',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    ipAddress: '192.168.1.100',
-  },
-  {
-    id: '2',
-    action: 'REGISTRATION_APPROVED',
-    performedBy: 'Mary Leader',
-    role: UserRole.YEAR_LEADER,
-    targetUser: 'Alex Rivera',
-    details: 'Approved registration #abc123 - Year Leader stage',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-    ipAddress: '192.168.1.101',
-  },
-  {
-    id: '3',
-    action: 'LOGIN_SUCCESS',
-    performedBy: 'Admin User',
-    role: UserRole.SYSTEM_ADMIN,
-    details: 'Successful login from admin panel',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    ipAddress: '192.168.1.1',
-  },
-  {
-    id: '4',
-    action: 'LOGIN_FAILED',
-    performedBy: 'unknown@email.com',
-    role: UserRole.STUDENT,
-    details: 'Failed login attempt - incorrect password (attempt 3/5)',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    ipAddress: '203.45.67.89',
-  },
-  {
-    id: '5',
-    action: 'PASSWORD_CHANGED',
-    performedBy: 'Alex Rivera',
-    role: UserRole.STUDENT,
-    details: 'Password changed successfully (first login)',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    ipAddress: '192.168.1.150',
-  },
-];
 
-const MOCK_STATS: SystemStats = {
-  totalUsers: 1247,
-  activeStudents: 1089,
-  staffMembers: 158,
-  pendingRegistrations: 45,
-  systemUptime: '99.9%',
-  lastBackup: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-};
+
+import { getSystemStats, getAuditLogs } from '../services/admin.service';
 
 const SystemAdminDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'overview' | 'audit' | 'users' | 'settings'>('overview');
   const [auditFilter, setAuditFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [stats, setStats] = useState<SystemStats | null>(null);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredLogs = MOCK_AUDIT_LOGS.filter(log => {
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const statsResult = await getSystemStats();
+        if (statsResult.success) setStats(statsResult.stats);
+
+        const logsResult = await getAuditLogs();
+        if (logsResult.success) setLogs(logsResult.logs);
+      } catch (error) {
+        console.error('Error fetching admin data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [activeSection]);
+
+  const filteredLogs = logs.filter(log => {
     if (auditFilter === 'all') return true;
     return log.action.toLowerCase().includes(auditFilter.toLowerCase());
   }).filter(log => {
@@ -165,8 +131,8 @@ const SystemAdminDashboard: React.FC = () => {
               key={section}
               onClick={() => setActiveSection(section)}
               className={`px-6 py-3 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors ${activeSection === section
-                  ? 'border-black text-black'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
+                ? 'border-black text-black'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
                 }`}
             >
               {section}
@@ -180,22 +146,22 @@ const SystemAdminDashboard: React.FC = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <StatCard
               label="Total Users"
-              value={MOCK_STATS.totalUsers.toString()}
+              value={stats?.totalUsers.toString() || '0'}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
             />
             <StatCard
               label="Active Students"
-              value={MOCK_STATS.activeStudents.toString()}
+              value={stats?.activeStudents.toString() || '0'}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
             />
             <StatCard
               label="Staff"
-              value={MOCK_STATS.staffMembers.toString()}
+              value={stats?.staffMembers.toString() || '0'}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
             />
             <StatCard
               label="Pending"
-              value={MOCK_STATS.pendingRegistrations.toString()}
+              value={stats?.pendingRegistrations.toString() || '0'}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
             />
           </div>
@@ -209,11 +175,11 @@ const SystemAdminDashboard: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <span className="text-sm font-bold text-gray-700">System Uptime</span>
-                  <span className="text-sm font-mono font-bold text-green-600">{MOCK_STATS.systemUptime}</span>
+                  <span className="text-sm font-mono font-bold text-green-600">{stats?.systemUptime || '99.9%'}</span>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <span className="text-sm font-bold text-gray-700">Last Backup</span>
-                  <span className="text-sm font-mono text-gray-600">{formatTimestamp(MOCK_STATS.lastBackup)}</span>
+                  <span className="text-sm font-mono text-gray-600">{stats ? formatTimestamp(stats.lastBackup) : 'N/A'}</span>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <span className="text-sm font-bold text-gray-700">Database Status</span>
@@ -274,8 +240,8 @@ const SystemAdminDashboard: React.FC = () => {
                   key={filter}
                   onClick={() => setAuditFilter(filter)}
                   className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${auditFilter === filter
-                      ? 'bg-black text-white border-black'
-                      : 'bg-white border-gray-200 hover:border-gray-400 text-gray-600'
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white border-gray-200 hover:border-gray-400 text-gray-600'
                     }`}
                 >
                   {filter}
@@ -303,7 +269,7 @@ const SystemAdminDashboard: React.FC = () => {
           />
 
           <div className="flex items-center justify-between text-xs px-2">
-            <p className="text-gray-500 font-medium">Showing {filteredLogs.length} of {MOCK_AUDIT_LOGS.length} logs</p>
+            <p className="text-gray-500 font-medium">Showing {filteredLogs.length} of {logs.length} logs</p>
             <div className="flex space-x-2">
               <Button size="sm" variant="outline" disabled>Previous</Button>
               <Button size="sm" variant="outline" disabled>Next</Button>

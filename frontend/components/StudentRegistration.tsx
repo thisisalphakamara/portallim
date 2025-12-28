@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { User, Module, RegistrationStatus, RegistrationSubmission } from '../types';
-import { MOCK_MODULES } from '../constants';
+import { getModulesByFaculty } from '../services/admin.service';
 import ApprovalTimeline from './ApprovalTimeline';
-import { 
-  StepIndicator, 
-  ProfileStep, 
-  ModuleSelectionStep, 
+import {
+  StepIndicator,
+  ProfileStep,
+  ModuleSelectionStep,
   ReviewStep,
   RegistrationConfirmation,
   RegistrationPending
@@ -18,10 +18,10 @@ interface StudentRegistrationProps {
   existingSubmission: RegistrationSubmission | null;
 }
 
-const StudentRegistration: React.FC<StudentRegistrationProps> = ({ 
-  user, 
-  onSubmitted, 
-  existingSubmission 
+const StudentRegistration: React.FC<StudentRegistrationProps> = ({
+  user,
+  onSubmitted,
+  existingSubmission
 }) => {
   const [step, setStep] = useState(1);
   const [semester, setSemester] = useState('Semester 1');
@@ -29,6 +29,24 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
   const [selectedModules, setSelectedModules] = useState<Module[]>([]);
   const [phoneNumber, setPhoneNumber] = useState(user.phoneNumber || '');
   const [sponsorType, setSponsorType] = useState(user.sponsorType || 'Self');
+  const [facultyModules, setFacultyModules] = useState<Module[]>([]);
+
+  useEffect(() => {
+    if (user.facultyId) {
+      loadModules(user.facultyId);
+    }
+  }, [user.facultyId]);
+
+  const loadModules = async (facultyId: string) => {
+    try {
+      const result = await getModulesByFaculty(facultyId);
+      if (result.success && result.modules) {
+        setFacultyModules(result.modules);
+      }
+    } catch (error) {
+      console.error('Error loading modules:', error);
+    }
+  };
 
   useEffect(() => {
     setAcademicYear(getYearForSemester(semester));
@@ -36,13 +54,13 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
 
   if (existingSubmission) {
     const isFullyApproved = existingSubmission.status === RegistrationStatus.APPROVED;
-    
+
     return (
       <div className="max-w-5xl mx-auto space-y-4">
         <div>
           <ApprovalTimeline submission={existingSubmission} />
         </div>
-        
+
         {isFullyApproved ? (
           <RegistrationConfirmation submission={existingSubmission} />
         ) : (
@@ -106,7 +124,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
 
         {step === 2 && (
           <ModuleSelectionStep
-            modules={MOCK_MODULES[user.faculty!]}
+            modules={facultyModules}
             selectedModules={selectedModules}
             onToggleModule={handleToggleModule}
             onBack={() => setStep(1)}

@@ -1,0 +1,169 @@
+import { Request, Response } from 'express';
+import { prisma } from '../index';
+import { Role, ApprovalStatus } from '@prisma/client';
+
+export const submitRegistration = async (req: any, res: Response) => {
+    const { semester, academicYear, modules } = req.body;
+    const student = req.user;
+
+    if (student.role !== Role.STUDENT) {
+        return res.status(403).json({ error: 'Only students can submit registrations' });
+    }
+
+    try {
+        // Check if faculty and program are assigned
+        if (!student.facultyId || !student.programId) {
+            return res.status(400).json({ error: 'Student must have a faculty and program assigned' });
+        }
+
+        const submission = await prisma.submission.create({
+            data: {
+                studentId: student.id,
+                facultyId: student.facultyId,
+                programId: student.programId,
+                semester,
+                academicYear,
+                modules,
+                status: ApprovalStatus.PENDING_YEAR_LEADER
+            }
+        });
+
+        // Log the submission
+        await prisma.approvalLog.create({
+            data: {
+                submissionId: submission.id,
+                userId: student.id,
+                action: 'SUBMITTED',
+                comments: 'Initial registration submission'
+            }
+        });
+
+        res.status(201).json({ success: true, submission });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getRegistrations = async (req: any, res: Response) => {
+    const user = req.user;
+
+    try {
+        let where: any = {};
+
+        // Faculty-based routing rule: Academic staff only see their faculty
+        if (user.role === Role.YEAR_LEADER || user.role === Role.FACULTY_ADMIN) {
+            if (!user.facultyId) return res.status(403).json({ error: 'Staff member must be assigned to a faculty' });
+            where.facultyId = user.facultyId;
+        }
+
+        // Student only sees their own
+        if (user.role === Role.STUDENT) {
+            where.studentId = user.id;
+        }
+
+        const registrations = await prisma.submission.findMany({
+            where,
+            include: {
+                student: true,
+                faculty: true,
+                program: true,
+                approvalLogs: {
+                    include: { user: true }
+                }
+            },
+            orderBy: { submittedAt: 'desc' }
+        });
+
+        res.json({ success: true, registrations });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const approveRegistration = async (req: any, res: Response) => {
+    const { id } = req.params;
+    const { comments } = req.body;
+    const user = req.user;
+
+    try {
+        const submission = await prisma.submission.findUnique({
+            where: { id },
+            include: { student: true }
+        });
+
+        if (!submission) return res.status(404).json({ error: 'Registration not found' });
+
+        // Faculty check for academic staff
+        if ((user.role === Role.YEAR_LEADER || user.role === Role.FACULTY_ADMIN) && user.facultyId !== submission.facultyId) {
+            return res.status(403).json({ error: 'You can only approve registrations in your faculty' });
+        }
+
+        let nextStatus: ApprovalStatus;
+
+        // Sequential Workflow logic
+        switch (user.role) {
+            case Role.YEAR_LEADER:
+                if (submission.status !== ApprovalStatus.PENDING_YEAR_LEADER) return res.status(400).json({ error: 'Invalid stage' });
+                nextStatus = ApprovalStatus.PENDING_FACULTY_ADMIN;
+                break;
+            case Role.FACULTY_ADMIN:
+                if (submission.status !== ApprovalStatus.PENDING_FACULTY_ADMIN) return res.status(400).json({ error: 'Invalid stage' });
+                nextStatus = ApprovalStatus.PENDING_FINANCE;
+                break;
+            case Role.FINANCE_OFFICER:
+                if (submission.status !== ApprovalStatus.PENDING_FINANCE) return res.status(400).json({ error: 'Invalid stage' });
+                nextStatus = ApprovalStatus.PENDING_REGISTRAR;
+                break;
+            case Role.REGISTRAR:
+                if (submission.status !== ApprovalStatus.PENDING_REGISTRAR) return res.status(400).json({ error: 'Invalid stage' });
+                nextStatus = ApprovalStatus.APPROVED;
+                break;
+            default:
+                return res.status(403).json({ error: 'Role not authorized to approve' });
+        }
+
+        const updated = await prisma.submission.update({
+            where: { id },
+            data: { status: nextStatus }
+        });
+
+        await prisma.approvalLog.create({
+            data: {
+                submissionId: id,
+                userId: user.id,
+                action: 'APPROVED',
+                comments
+            }
+        });
+
+        res.json({ success: true, submission: updated });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const rejectRegistration = async (req: any, res: Response) => {
+    const { id } = req.params;
+    const { comments } = req.body;
+    const user = req.user;
+
+    try {
+        const updated = await prisma.submission.update({
+            where: { id },
+            data: { status: ApprovalStatus.REJECTED }
+        });
+
+        await prisma.approvalLog.create({
+            data: {
+                submissionId: id,
+                userId: user.id,
+                action: 'REJECTED',
+                comments
+            }
+        });
+
+        res.json({ success: true, submission: updated });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};

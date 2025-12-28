@@ -193,8 +193,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdateProfile }) => {
         </div>
       )}
 
-      {/* Collapsible Security Settings */}
-      {user.role !== UserRole.STUDENT && (
+      {/* Collapsible Security Settings (Students Only) */}
+      {user.role === UserRole.STUDENT && (
         <div className="bg-white border border-black rounded-lg px-6 py-4 mt-2">
           <button
             className="w-full text-left text-sm font-bold uppercase tracking-widest mb-2 focus:outline-none"

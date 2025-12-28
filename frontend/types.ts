@@ -1,5 +1,3 @@
-
-
 export enum UserRole {
   STUDENT = 'STUDENT',
   YEAR_LEADER = 'YEAR_LEADER',
@@ -9,7 +7,18 @@ export enum UserRole {
   SYSTEM_ADMIN = 'SYSTEM_ADMIN'
 }
 
-export type Faculty = 'Faculty of Design Innovation' | 'Faculty of Multimedia Creativity' | 'Faculty of Information Technology' | 'Faculty of Business Management';
+export interface FacultyType {
+  id: string;
+  name: string;
+}
+
+export interface ProgramType {
+  id: string;
+  name: string;
+  facultyId: string;
+}
+
+export type Faculty = string;
 
 export enum RegistrationStatus {
   NOT_STARTED = 'Not Started',
@@ -26,7 +35,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  faculty?: Faculty;
+  faculty?: string;
   program?: string;
   studentId?: string;
   nationalId?: string;
@@ -47,7 +56,7 @@ export interface RegistrationSubmission {
   studentId: string;
   studentName: string;
   studentEmail: string;
-  faculty: Faculty | string;
+  faculty: string;
   program: string;
   semester: string;
   academicYear: string;

@@ -11,57 +11,9 @@ import ChangePasswordModal from './components/ChangePasswordModal';
 import StudentAccountsList from './components/StudentAccountsList';
 import { User, UserRole, RegistrationSubmission, RegistrationStatus } from './types';
 import limlogo from './assets/limlogo.png';
-// Backend services removed - using mock logic for now
-// import { signIn, signOut, getCurrentUserProfile, changePassword } from './services/auth.service';
-// import { getRegistrations, approveRegistration, rejectRegistration } from './services/registration.service';
-
-// Mock Mock Services
-const mockUser: User = {
-  id: '1',
-  name: 'System Administrator',
-  email: 'admin@limkokwing.edu.sl',
-  role: UserRole.SYSTEM_ADMIN,
-  isFirstLogin: false
-};
-
-const mockSignIn = async (credentials: any) => {
-  console.log('Mock sign in with:', credentials);
-  return {
-    success: true,
-    user: { ...mockUser, email: credentials.email },
-    error: null,
-    attemptsRemaining: 5,
-    isLocked: false
-  };
-};
-
-const mockSignOut = async () => {
-  console.log('Mock sign out');
-  return { success: true };
-};
-
-const mockGetCurrentUserProfile = async () => {
-  return null; // Start at login screen
-};
-
-const mockChangePassword = async (pwd: string) => {
-  console.log('Mock password change:', pwd);
-  return { success: true, error: null };
-};
-
-const mockGetRegistrations = async () => {
-  return { success: true, registrations: [], error: null };
-};
-
-const mockApproveRegistration = async (id: string, userId: string) => {
-  console.log('Mock approval:', id, 'by', userId);
-  return { success: true, newStatus: RegistrationStatus.APPROVED, error: null };
-};
-
-const mockRejectRegistration = async (id: string, userId: string, comments: string) => {
-  console.log('Mock rejection:', id, 'by', userId, comments);
-  return { success: true, error: null };
-};
+import { login as apiLogin, logout as apiLogout, getCurrentUserProfile, changePassword as apiChangePassword } from './services/auth.service';
+import { getRegistrations, approveRegistration, rejectRegistration, submitRegistration } from './services/registration.service';
+import { getAllStaff, getStudents } from './services/admin.service';
 
 
 
@@ -88,16 +40,59 @@ const App: React.FC = () => {
     if (user) {
       loadRegistrations();
 
-      // Check if first login
-      if (user.isFirstLogin) {
+      // Check if first login (Students only)
+      if (user.isFirstLogin && user.role === UserRole.STUDENT) {
         setShowFirstLoginModal(true);
       }
+
+      // Load accounts if authorized
+      loadAuthorizedAccounts();
     }
   }, [user]);
 
+  const loadAuthorizedAccounts = async () => {
+    if (!user) return;
+
+    try {
+      if (user.role === UserRole.SYSTEM_ADMIN) {
+        const staffResult = await getAllStaff();
+        if (staffResult.success) {
+          // Flatten faculty name for the UI
+          const flattenedStaff = staffResult.staff.map((s: any) => ({
+            ...s,
+            name: s.fullName,
+            faculty: s.faculty?.name
+          }));
+          setCreatedAccounts(flattenedStaff);
+        }
+      }
+
+      if (user.role === UserRole.REGISTRAR || user.role === UserRole.SYSTEM_ADMIN) {
+        const studentResult = await getStudents();
+        if (studentResult.success) {
+          const flattenedStudents = studentResult.students.map((s: any) => ({
+            ...s,
+            name: s.fullName,
+            faculty: s.faculty?.name,
+            program: s.program?.name
+          }));
+
+          if (user.role === UserRole.REGISTRAR) {
+            setCreatedAccounts(flattenedStudents);
+          } else {
+            // System admin might want both, but for now let's just combine or prioritize
+            setCreatedAccounts(prev => [...prev, ...flattenedStudents]);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+    }
+  };
+
   const checkSession = async () => {
     try {
-      const profile = await mockGetCurrentUserProfile();
+      const profile = await getCurrentUserProfile();
       if (profile) {
         setUser(profile);
       }
@@ -110,7 +105,7 @@ const App: React.FC = () => {
 
   const loadRegistrations = async () => {
     try {
-      const result = await mockGetRegistrations();
+      const result = await getRegistrations();
       if (result.success && result.registrations) {
         setSubmissions(result.registrations);
       }
@@ -130,7 +125,7 @@ const App: React.FC = () => {
     setAttemptsRemaining(null);
 
     try {
-      const result = await mockSignIn({
+      const result = await apiLogin({
         email: loginEmail,
         password: loginPassword,
       });
@@ -166,7 +161,7 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await mockSignOut();
+      apiLogout();
       setUser(null);
       setActivePage('dashboard');
       setSubmissions([]);
@@ -176,18 +171,29 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRegistrationSubmit = (submission: RegistrationSubmission) => {
-    setSubmissions([submission, ...submissions]);
+  const handleRegistrationSubmit = async (submissionData: any) => {
+    try {
+      const result = await submitRegistration(submissionData);
+      if (result.success) {
+        alert('Registration submitted successfully!');
+        await loadRegistrations();
+      } else {
+        alert(result.error || 'Failed to submit registration');
+      }
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      alert(error.message || 'Failed to submit registration');
+    }
   };
 
   const handleApprove = async (id: string) => {
     if (!user) return;
 
     try {
-      const result = await mockApproveRegistration(id, user.id);
+      const result = await approveRegistration(id, 'Approved by staff');
 
       if (result.success) {
-        alert(`Registration approved! New status: ${result.newStatus}`);
+        alert(`Registration approved!`);
         // Reload registrations
         await loadRegistrations();
       } else {
@@ -206,10 +212,10 @@ const App: React.FC = () => {
     if (!comments) return;
 
     try {
-      const result = await mockRejectRegistration(id, user.id, comments);
+      const result = await rejectRegistration(id, comments);
 
       if (result.success) {
-        alert('Registration rejected. Student has been notified.');
+        alert('Registration rejected.');
         // Reload registrations
         await loadRegistrations();
       } else {
@@ -229,7 +235,7 @@ const App: React.FC = () => {
 
   const handleFirstLoginPasswordChange = async (newPassword: string) => {
     try {
-      const result = await mockChangePassword(newPassword);
+      const result = await apiChangePassword(newPassword);
 
       if (result.success) {
         if (user) {
@@ -326,10 +332,13 @@ const App: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="mt-8 pt-4 border-t border-gray-100 text-[10px] text-gray-400 uppercase font-bold text-center">
-              Student accounts are created by Registrar Department only.
-            </div>
           </div>
+          <footer className="mt-12 text-center text-gray-400">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-black">
+              © {new Date().getFullYear()} Limkokwing University Online Registration System
+            </p>
+            <p className="text-[9px] uppercase mt-1 font-bold text-gray-500">All Rights Reserved</p>
+          </footer>
         </div>
       </div>
     );
