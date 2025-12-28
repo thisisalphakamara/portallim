@@ -74,7 +74,21 @@ export const getRegistrations = async (req: any, res: Response) => {
             orderBy: { submittedAt: 'desc' }
         });
 
-        res.json({ success: true, registrations });
+        const flattenedRegistrations = registrations.map(reg => ({
+            ...reg,
+            studentName: reg.student.fullName,
+            studentEmail: reg.student.email,
+            faculty: reg.faculty.name,
+            program: reg.program.name,
+            approvalHistory: reg.approvalLogs.map(log => ({
+                role: log.user.role,
+                approvedBy: log.user.fullName,
+                date: log.createdAt.toISOString(),
+                comments: log.comments
+            }))
+        }));
+
+        res.json({ success: true, registrations: flattenedRegistrations });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

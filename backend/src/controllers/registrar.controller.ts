@@ -67,7 +67,15 @@ export const getStudents = async (req: any, res: Response) => {
             where: { role: Role.STUDENT },
             include: { faculty: true, program: true }
         });
-        res.json({ success: true, students });
+
+        const flattenedStudents = students.map(s => ({
+            ...s,
+            name: s.fullName,
+            faculty: s.faculty?.name,
+            program: s.program?.name
+        }));
+
+        res.json({ success: true, students: flattenedStudents });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

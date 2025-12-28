@@ -76,9 +76,12 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
   const loadPrograms = async (facultyId: string) => {
     const result = await getProgramsByFaculty(facultyId);
     if (result.success && result.programs) {
-      setPrograms(result.programs);
-      if (result.programs.length > 0) {
-        setSelectedProgramId(result.programs[0].id);
+      const uniqueProgramsByName = result.programs.filter((program, index, self) =>
+        self.findIndex(p => p.name === program.name) === index
+      );
+      setPrograms(uniqueProgramsByName);
+      if (uniqueProgramsByName.length > 0) {
+        setSelectedProgramId(uniqueProgramsByName[0].id);
       }
     }
   };

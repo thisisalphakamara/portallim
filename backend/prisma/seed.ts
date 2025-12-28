@@ -5,12 +5,32 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('Seeding data...');
 
-    // 1. Create Faculties
+    // 1. Clean up legacy faculty data that should no longer be used
+    const legacyFacultyNames = ['Faculty of Information Technology', 'Faculty of Business Management'];
+    const legacyFaculties = await prisma.faculty.findMany({
+        where: {
+            name: {
+                in: legacyFacultyNames
+            }
+        }
+    });
+    const legacyFacultyIds = legacyFaculties.map(f => f.id);
+
+    if (legacyFacultyIds.length > 0) {
+        await prisma.module.deleteMany({ where: { facultyId: { in: legacyFacultyIds } } });
+        await prisma.program.deleteMany({ where: { facultyId: { in: legacyFacultyIds } } });
+        await prisma.faculty.deleteMany({ where: { id: { in: legacyFacultyIds } } });
+    }
+
+    // 2. Create Faculties
     const faculties = [
-        { name: 'Faculty of Information Technology' },
-        { name: 'Faculty of Business Management' },
         { name: 'Faculty of Design Innovation' },
-        { name: 'Faculty of Multimedia Creativity' }
+        { name: 'Faculty of Information & Communication Technology' },
+        { name: 'Faculty of Business Management & Globalisation' },
+        { name: 'Faculty of Communication, Media & Broadcasting' },
+        { name: 'Faculty of Architecture & The Built Environment' },
+        { name: 'Faculty of Multimedia Creativity' },
+        { name: 'Faculty of Fashion & Lifestyle Creativity' }
     ];
 
     for (const f of faculties) {
@@ -21,48 +41,116 @@ async function main() {
         });
     }
 
-    const itFaculty = await prisma.faculty.findUnique({ where: { name: 'Faculty of Information Technology' } });
-    const bizFaculty = await prisma.faculty.findUnique({ where: { name: 'Faculty of Business Management' } });
+    const facultyRecords = await prisma.faculty.findMany({
+        where: {
+            name: {
+                in: faculties.map(f => f.name)
+            }
+        }
+    });
 
-    // 2. Create Programs
-    if (itFaculty) {
+    const facultyIdMap: Record<string, string> = {};
+    facultyRecords.forEach(f => {
+        facultyIdMap[f.name] = f.id;
+    });
+
+    const programsByFaculty: Record<string, string[]> = {
+        'Faculty of Design Innovation': [
+            'Professional Design (Visual Communication)',
+            'Industrial Design',
+            'Brand Packaging Design',
+            'Product Design & Innovation',
+            'Graphic Design',
+            'Product Design',
+            'Packaging Design & Technology'
+        ],
+        'Faculty of Information & Communication Technology': [
+            'Information Technology (BIT)',
+            'Software Engineering with Multimedia (BSEM)',
+            'Business Information Technology (BBIT)',
+            'Information and Communication Technology (BICT)',
+            'Mobile Computing',
+            'Cloud Computing Technology'
+        ],
+        'Faculty of Business Management & Globalisation': [
+            'Business Administration',
+            'International Business',
+            'Accounting',
+            'Marketing',
+            'Human Resource Management',
+            'Entrepreneurship'
+        ],
+        'Faculty of Communication, Media & Broadcasting': [
+            'Broadcasting and Journalism',
+            'Professional Communication',
+            'Digital Film and Television',
+            'Event Management',
+            'Public Relations',
+            'Journalism and Media',
+            'Broadcasting (Radio & TV)'
+        ],
+        'Faculty of Architecture & The Built Environment': [
+            'Architectural Studies',
+            'Interior Architecture',
+            'Landscape Architecture',
+            'Construction Management',
+            'Architectural Technology',
+            'Interior Design'
+        ],
+        'Faculty of Multimedia Creativity': [
+            'Creative Multimedia',
+            'Games Design',
+            'Animation',
+            'Games Art Development',
+            'Animation & Multimedia Design',
+            'Games Art'
+        ],
+        'Faculty of Fashion & Lifestyle Creativity': [
+            'Fashion and Retailing',
+            'Fashion Design',
+            'Fashion and Apparel Design',
+            'Hair Design',
+            'Batik Design'
+        ]
+    };
+
+    for (const [facultyName, programs] of Object.entries(programsByFaculty)) {
+        const facultyId = facultyIdMap[facultyName];
+        if (!facultyId) continue;
+
+        await prisma.program.deleteMany({ where: { facultyId } });
+
         await prisma.program.createMany({
-            data: [
-                { name: 'BSc in Software Engineering', facultyId: itFaculty.id },
-                { name: 'BSc in Computer Science', facultyId: itFaculty.id }
-            ],
+            data: programs.map((programName) => ({
+                name: programName,
+                facultyId
+            })),
             skipDuplicates: true
         });
     }
 
-    if (bizFaculty) {
-        await prisma.program.createMany({
-            data: [
-                { name: 'BA in Business Management', facultyId: bizFaculty.id },
-                { name: 'BA in Accounting', facultyId: bizFaculty.id }
-            ],
-            skipDuplicates: true
-        });
-    }
-
-    // 2.5 Create Modules
-    const itModules = [
-        { name: 'Software Engineering', code: 'BIT201', credits: 4, facultyId: itFaculty?.id! },
-        { name: 'Database Systems', code: 'BIT202', credits: 4, facultyId: itFaculty?.id! },
-        { name: 'Web Development', code: 'BIT203', credits: 3, facultyId: itFaculty?.id! }
+    const modulesToSeed = [
+        { name: 'Software Engineering', code: 'ICT201', credits: 4, facultyName: 'Faculty of Information & Communication Technology' },
+        { name: 'Database Systems', code: 'ICT202', credits: 4, facultyName: 'Faculty of Information & Communication Technology' },
+        { name: 'Web Development', code: 'ICT203', credits: 3, facultyName: 'Faculty of Information & Communication Technology' },
+        { name: 'Marketing Strategy', code: 'BBMG401', credits: 4, facultyName: 'Faculty of Business Management & Globalisation' },
+        { name: 'Corporate Finance', code: 'BBMG402', credits: 4, facultyName: 'Faculty of Business Management & Globalisation' },
+        { name: 'Business Ethics', code: 'BBMG403', credits: 3, facultyName: 'Faculty of Business Management & Globalisation' }
     ];
 
-    const bizModules = [
-        { name: 'Marketing Strategy', code: 'BBM401', credits: 4, facultyId: bizFaculty?.id! },
-        { name: 'Corporate Finance', code: 'BBM402', credits: 4, facultyId: bizFaculty?.id! },
-        { name: 'Business Ethics', code: 'BBM403', credits: 3, facultyId: bizFaculty?.id! }
-    ];
+    for (const module of modulesToSeed) {
+        const facultyId = facultyIdMap[module.facultyName];
+        if (!facultyId) continue;
 
-    for (const m of [...itModules, ...bizModules]) {
         await prisma.module.upsert({
-            where: { code: m.code },
+            where: { code: module.code },
             update: {},
-            create: m
+            create: {
+                name: module.name,
+                code: module.code,
+                credits: module.credits,
+                facultyId
+            }
         });
     }
 

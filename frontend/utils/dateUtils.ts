@@ -22,3 +22,10 @@ export const formatShortDate = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toLocaleDateString();
 };
+
+export const formatIntake = (monthYear: string): string => {
+  const [year, month] = monthYear.split('-');
+  if (!year || !month) return monthYear;
+  const date = new Date(Number(year), Number(month) - 1);
+  return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+};

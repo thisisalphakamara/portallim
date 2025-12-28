@@ -1,7 +1,7 @@
 import React from 'react';
 import { User, Module } from '../../../types';
 import { Button } from '../../ui';
-import { formatDate } from '../../../utils';
+import { formatDate, formatIntake } from '../../../utils';
 
 interface ReviewStepProps {
   user: User;
@@ -10,6 +10,7 @@ interface ReviewStepProps {
   phoneNumber: string;
   sponsorType: string;
   selectedModules: Module[];
+  enrollmentMonthYear: string;
   onBack: () => void;
   onSubmit: () => void;
 }
@@ -21,6 +22,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   phoneNumber,
   sponsorType,
   selectedModules,
+  enrollmentMonthYear,
   onBack,
   onSubmit
 }) => {
@@ -40,10 +42,13 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
           <SummaryItem label="Student Name" value={user.name} />
           <SummaryItem label="Student ID" value={user.studentId || user.id} />
+          <SummaryItem label="Email Address" value={user.email} />
+          <SummaryItem label="Phone Number" value={phoneNumber || 'Not provided'} />
+          <SummaryItem label="Faculty" value={user.faculty || 'Not assigned'} />
           <SummaryItem label="Program" value={user.program || 'Not assigned'} />
-          <SummaryItem label="Semester" value={`${semester} - ${academicYear}`} />
-          <SummaryItem label="Contact" value={phoneNumber} />
-          <SummaryItem label="Sponsor" value={sponsorType} />
+          <SummaryItem label="Enrollment Intake" value={enrollmentMonthYear ? formatIntake(enrollmentMonthYear) : 'Not provided'} />
+          <SummaryItem label="Semester / Year" value={`${semester} • ${academicYear}`} />
+          <SummaryItem label="Sponsor Type" value={sponsorType} />
         </div>
       </div>
 

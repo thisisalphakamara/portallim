@@ -331,14 +331,15 @@ const App: React.FC = () => {
                   {loginLoading ? 'Logging in...' : 'Login'}
                 </button>
               </div>
+
+              <div className="pt-8 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-black">
+                  © {new Date().getFullYear()} Limkokwing University Online Registration System
+                </p>
+                <p className="text-[9px] uppercase mt-1 font-bold text-gray-500">All Rights Reserved</p>
+              </div>
             </div>
           </div>
-          <footer className="mt-12 text-center text-gray-400">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-black">
-              © {new Date().getFullYear()} Limkokwing University Online Registration System
-            </p>
-            <p className="text-[9px] uppercase mt-1 font-bold text-gray-500">All Rights Reserved</p>
-          </footer>
         </div>
       </div>
     );

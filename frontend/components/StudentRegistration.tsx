@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { User, Module, RegistrationStatus, RegistrationSubmission } from '../types';
-import { getModulesByFaculty } from '../services/admin.service';
 import ApprovalTimeline from './ApprovalTimeline';
 import {
   StepIndicator,
@@ -18,6 +17,15 @@ interface StudentRegistrationProps {
   existingSubmission: RegistrationSubmission | null;
 }
 
+const defaultModules: Module[] = [
+  { id: 'mod1', name: 'Fundamental of Computer Systems', code: 'FCS101', credits: 3 },
+  { id: 'mod2', name: 'Mathematics for Computing', code: 'MFC102', credits: 3 },
+  { id: 'mod3', name: 'Introduction to Programming', code: 'ITP103', credits: 3 },
+  { id: 'mod4', name: 'Multimedia Technology', code: 'MMT104', credits: 3 },
+  { id: 'mod5', name: 'Communication Skills', code: 'CS105', credits: 3 },
+  { id: 'mod6', name: 'Creative Studies', code: 'CRS106', credits: 3 }
+];
+
 const StudentRegistration: React.FC<StudentRegistrationProps> = ({
   user,
   onSubmitted,
@@ -29,24 +37,15 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
   const [selectedModules, setSelectedModules] = useState<Module[]>([]);
   const [phoneNumber, setPhoneNumber] = useState(user.phoneNumber || '');
   const [sponsorType, setSponsorType] = useState(user.sponsorType || 'Self');
-  const [facultyModules, setFacultyModules] = useState<Module[]>([]);
+  const [enrollmentMonthYear, setEnrollmentMonthYear] = useState(
+    user.enrollmentIntake || new Date().toISOString().slice(0, 7)
+  );
 
   useEffect(() => {
-    if (user.facultyId) {
-      loadModules(user.facultyId);
+    if (user.enrollmentIntake) {
+      setEnrollmentMonthYear(user.enrollmentIntake);
     }
-  }, [user.facultyId]);
-
-  const loadModules = async (facultyId: string) => {
-    try {
-      const result = await getModulesByFaculty(facultyId);
-      if (result.success && result.modules) {
-        setFacultyModules(result.modules);
-      }
-    } catch (error) {
-      console.error('Error loading modules:', error);
-    }
-  };
+  }, [user.enrollmentIntake]);
 
   useEffect(() => {
     setAcademicYear(getYearForSemester(semester));
@@ -83,9 +82,13 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
       id: generateSubmissionId(),
       studentId: user.id,
       studentName: user.name,
+      studentEmail: user.email,
       faculty: user.faculty!,
+      program: user.program || 'Not assigned',
       semester,
       academicYear,
+      yearLevel: parseInt(academicYear.replace('Year ', ''), 10) || 1,
+      enrollmentIntake: enrollmentMonthYear,
       modules: selectedModules,
       status: RegistrationStatus.PENDING_YEAR_LEADER,
       submittedAt: new Date().toISOString(),
@@ -118,13 +121,15 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
             onSemesterChange={setSemester}
             onPhoneNumberChange={setPhoneNumber}
             onSponsorTypeChange={setSponsorType}
+            enrollmentMonthYear={enrollmentMonthYear}
+            onEnrollmentMonthYearChange={setEnrollmentMonthYear}
             onNext={() => setStep(2)}
           />
         )}
 
         {step === 2 && (
           <ModuleSelectionStep
-            modules={facultyModules}
+            modules={defaultModules}
             selectedModules={selectedModules}
             onToggleModule={handleToggleModule}
             onBack={() => setStep(1)}
@@ -142,6 +147,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
             selectedModules={selectedModules}
             onBack={() => setStep(2)}
             onSubmit={handleSubmit}
+            enrollmentMonthYear={enrollmentMonthYear}
           />
         )}
       </div>

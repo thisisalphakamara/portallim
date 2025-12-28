@@ -1,7 +1,6 @@
 import React from 'react';
 import { User } from '../../../types';
 import { Input, Select, Button } from '../../ui';
-import { formatDate } from '../../../utils';
 
 interface ProfileStepProps {
   user: User;
@@ -12,6 +11,8 @@ interface ProfileStepProps {
   onSemesterChange: (semester: string) => void;
   onPhoneNumberChange: (phone: string) => void;
   onSponsorTypeChange: (type: string) => void;
+  enrollmentMonthYear: string;
+  onEnrollmentMonthYearChange: (value: string) => void;
   onNext: () => void;
 }
 
@@ -24,6 +25,8 @@ const ProfileStep: React.FC<ProfileStepProps> = ({
   onSemesterChange,
   onPhoneNumberChange,
   onSponsorTypeChange,
+  enrollmentMonthYear,
+  onEnrollmentMonthYearChange,
   onNext
 }) => {
   const semesterOptions = Array.from({ length: 8 }, (_, i) => ({
@@ -78,7 +81,16 @@ const ProfileStep: React.FC<ProfileStepProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ReadOnlyField label="Assigned Faculty" value={user.faculty} />
           <ReadOnlyField label="Designated Program" value={user.program || 'Not assigned'} />
-          <ReadOnlyField label="Enrollment Date" value={formatDate(new Date().toISOString())} />
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Enrollment Intake</label>
+            <input
+              type="month"
+              value={enrollmentMonthYear}
+              onChange={e => onEnrollmentMonthYearChange(e.target.value)}
+              className="w-full py-2.5 pl-4 pr-10 border border-gray-200 rounded-lg bg-gray-50 text-sm font-medium focus:outline-none"
+            />
+            <p className="text-[10px] uppercase tracking-widest text-gray-400">Pick the month and year you joined</p>
+          </div>
           <Select
             label="Sponsor Type"
             value={sponsorType}

@@ -120,7 +120,14 @@ export const getAllStaff = async (req: any, res: Response) => {
             },
             include: { faculty: true }
         });
-        res.json({ success: true, staff });
+
+        const flattenedStaff = staff.map(s => ({
+            ...s,
+            name: s.fullName,
+            faculty: s.faculty?.name
+        }));
+
+        res.json({ success: true, staff: flattenedStaff });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

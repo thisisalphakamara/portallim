@@ -49,6 +49,7 @@ export const login = async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 email: user.email,
+                name: user.fullName,
                 fullName: user.fullName,
                 role: user.role,
                 isFirstLogin: user.isFirstLogin,
@@ -92,5 +93,19 @@ export const changePassword = async (req: any, res: Response) => {
 };
 
 export const getMe = async (req: any, res: Response) => {
-    res.json({ success: true, user: req.user });
+    const user = req.user;
+    res.json({
+        success: true,
+        user: {
+            id: user.id,
+            email: user.email,
+            name: user.fullName || user.name, // Support both fields
+            fullName: user.fullName,
+            role: user.role,
+            isFirstLogin: user.isFirstLogin,
+            faculty: user.faculty?.name,
+            program: user.program?.name,
+            studentId: user.studentId
+        }
+    });
 };
