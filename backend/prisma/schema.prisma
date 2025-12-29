@@ -45,6 +45,8 @@ model User {
   sponsorType      String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  loginAttempts    Int              @default(0)
+  lockedUntil      DateTime?
   submissions      Submission[]
   approvalLogs     ApprovalLog[]
 
@@ -88,6 +90,8 @@ model Submission {
   program            Program        @relation(fields: [programId], references: [id])
   semester           String
   academicYear       String
+  enrollmentIntake   String
+  yearLevel          Int?
   status             ApprovalStatus @default(PENDING_YEAR_LEADER)
   modules            Json           // List of modules selected
   submittedAt        DateTime       @default(now())

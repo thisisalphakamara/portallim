@@ -18,6 +18,19 @@ export const login = async (req: Request, res: Response) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        const now = new Date();
+        const MAX_LOGIN_ATTEMPTS = 5;
+        const LOCK_DURATION_MINUTES = 15;
+
+        if (user.lockedUntil && user.lockedUntil > now) {
+            return res.status(403).json({
+                error: `Account locked until ${user.lockedUntil.toISOString()}`,
+                attemptsRemaining: 0,
+                isLocked: true,
+                lockedUntil: user.lockedUntil
+            });
+        }
+
         // 2. Auth with Supabase
         let session;
         if (!user.supabaseId) {
@@ -30,7 +43,23 @@ export const login = async (req: Request, res: Response) => {
         });
 
         if (error) {
-            return res.status(401).json({ error: error.message });
+            const attempts = user.loginAttempts + 1;
+            const shouldLock = attempts >= MAX_LOGIN_ATTEMPTS;
+            const lockedUntil = shouldLock
+                ? new Date(now.getTime() + LOCK_DURATION_MINUTES * 60 * 1000)
+                : null;
+
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { loginAttempts: attempts, lockedUntil }
+            });
+
+            return res.status(401).json({
+                error: error.message,
+                attemptsRemaining: Math.max(0, MAX_LOGIN_ATTEMPTS - attempts),
+                isLocked: shouldLock,
+                lockedUntil
+            });
         }
 
         session = data.session;

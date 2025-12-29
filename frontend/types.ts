@@ -21,13 +21,13 @@ export interface ProgramType {
 export type Faculty = string;
 
 export enum RegistrationStatus {
-  NOT_STARTED = 'Not Started',
-  PENDING_YEAR_LEADER = 'Pending Year Leader',
-  PENDING_FACULTY_ADMIN = 'Pending Faculty Admin',
-  PENDING_FINANCE = 'Pending Finance',
-  PENDING_REGISTRAR = 'Pending Registrar',
-  APPROVED = 'Approved',
-  REJECTED = 'Rejected'
+  NOT_STARTED = 'NOT_STARTED',
+  PENDING_YEAR_LEADER = 'PENDING_YEAR_LEADER',
+  PENDING_FACULTY_ADMIN = 'PENDING_FACULTY_ADMIN',
+  PENDING_FINANCE = 'PENDING_FINANCE',
+  PENDING_REGISTRAR = 'PENDING_REGISTRAR',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED'
 }
 
 export interface User {

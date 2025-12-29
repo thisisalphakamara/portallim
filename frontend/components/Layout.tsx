@@ -119,7 +119,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
           <div className="p-4 border-t border-gray-800">
             <button
               onClick={onLogout}
-              className="group w-full flex items-center justify-center py-3 px-4 border border-gray-700 hover:bg-white hover:border-white transition-all rounded-lg"
+              className="group w-[120px] mx-auto flex items-center justify-center py-2 px-3 border border-gray-700 hover:bg-white hover:border-white transition-all rounded-lg"
             >
               <span className="text-xs font-black uppercase tracking-widest text-white group-hover:text-black transition-colors">Log Out</span>
             </button>

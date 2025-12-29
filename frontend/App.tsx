@@ -29,6 +29,8 @@ const App: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
+  const [loginLocked, setLoginLocked] = useState(false);
+  const [lockedUntil, setLockedUntil] = useState<string | null>(null);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -123,6 +125,8 @@ const App: React.FC = () => {
     setLoginLoading(true);
     setLoginError('');
     setAttemptsRemaining(null);
+    setLoginLocked(false);
+    setLockedUntil(null);
 
     try {
       const result = await apiLogin({
@@ -135,6 +139,15 @@ const App: React.FC = () => {
 
         if (result.attemptsRemaining !== undefined) {
           setAttemptsRemaining(result.attemptsRemaining);
+        }
+
+        if (result.isLocked && result.lockedUntil) {
+          setLoginLocked(true);
+          setLockedUntil(result.lockedUntil);
+          setLoginError(`${result.error} Account locked until ${new Date(result.lockedUntil).toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })} on ${new Date(result.lockedUntil).toLocaleDateString('en-GB')}`);
         }
 
         if (result.isLocked) {
@@ -150,7 +163,8 @@ const App: React.FC = () => {
       setLoginPassword('');
       setLoginError('');
       setAttemptsRemaining(null);
-
+      setLoginLocked(false);
+      setLockedUntil(null);
     } catch (error: any) {
       console.error('Login error:', error);
       setLoginError(error.message || 'An unexpected error occurred');
@@ -166,6 +180,9 @@ const App: React.FC = () => {
       setActivePage('dashboard');
       setSubmissions([]);
       setCreatedAccounts([]);
+      setLoginLocked(false);
+      setLockedUntil(null);
+      setAttemptsRemaining(null);
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -325,12 +342,24 @@ const App: React.FC = () => {
               <div>
                 <button
                   onClick={handleLoginWithCredentials}
-                  disabled={loginLoading}
+                  disabled={loginLoading || loginLocked}
                   className="w-full py-3 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-all duration-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loginLoading ? 'Logging in...' : 'Login'}
+                  {loginLoading ? 'Logging in...' : loginLocked ? 'Locked' : 'Login'}
                 </button>
               </div>
+
+              {loginLocked && lockedUntil && (
+                <p className="text-[10px] text-red-600 uppercase mt-3">
+                  Account locked until {new Date(lockedUntil).toLocaleDateString('en-GB')} {new Date(lockedUntil).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              )}
+
+              {!loginLocked && attemptsRemaining !== null && attemptsRemaining > 0 && (
+                <p className="text-[10px] text-gray-500 uppercase mt-3">
+                  {attemptsRemaining} login attempt{attemptsRemaining > 1 ? 's' : ''} remaining
+                </p>
+              )}
 
               <div className="pt-8 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-black">
