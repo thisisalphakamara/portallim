@@ -1,37 +1,64 @@
 import 'dotenv/config';
 import { PrismaClient, Role } from '@prisma/client';
+import { ALL_MODULES } from '../src/constants/modules';
 const prisma = new PrismaClient();
 
 async function main() {
     console.log('Seeding data...');
 
-    // 1. Clean up legacy faculty data that should no longer be used
-    const legacyFacultyNames = ['Faculty of Information Technology', 'Faculty of Business Management'];
-    const legacyFaculties = await prisma.faculty.findMany({
+    const ALLOWED_FACULTIES = [
+        'Faculty of Information & Communication Technology (FICT)',
+        'Faculty of Architecture & The Built Environment (FABE)',
+        'Faculty of Communication, Media & Broadcasting (FCMB)'
+    ];
+
+    // 1. Clean up faculty data that should no longer be used
+    const unwantedFaculties = await prisma.faculty.findMany({
         where: {
             name: {
-                in: legacyFacultyNames
+                notIn: ALLOWED_FACULTIES
             }
         }
     });
-    const legacyFacultyIds = legacyFaculties.map(f => f.id);
+    const unwantedIds = unwantedFaculties.map(f => f.id);
 
-    if (legacyFacultyIds.length > 0) {
-        await prisma.module.deleteMany({ where: { facultyId: { in: legacyFacultyIds } } });
-        await prisma.program.deleteMany({ where: { facultyId: { in: legacyFacultyIds } } });
-        await prisma.faculty.deleteMany({ where: { id: { in: legacyFacultyIds } } });
+    if (unwantedIds.length > 0) {
+        const programsToDelete = await prisma.program.findMany({
+            where: { facultyId: { in: unwantedIds } },
+            select: { id: true }
+        });
+        const programIds = programsToDelete.map(p => p.id);
+
+        const submissionsToDelete = await prisma.submission.findMany({
+            where: { facultyId: { in: unwantedIds } },
+            select: { id: true }
+        });
+        const submissionIds = submissionsToDelete.map(s => s.id);
+
+        if (submissionIds.length > 0) {
+            await prisma.approvalLog.deleteMany({ where: { submissionId: { in: submissionIds } } });
+            await prisma.submission.deleteMany({ where: { id: { in: submissionIds } } });
+        }
+
+        if (programIds.length > 0) {
+            await prisma.user.updateMany({
+                where: { programId: { in: programIds } },
+                data: { programId: null }
+            });
+        }
+
+        await prisma.user.updateMany({
+            where: { facultyId: { in: unwantedIds } },
+            data: { facultyId: null }
+        });
+
+        await prisma.module.deleteMany({ where: { facultyId: { in: unwantedIds } } });
+        await prisma.program.deleteMany({ where: { id: { in: programIds } } });
+        await prisma.faculty.deleteMany({ where: { id: { in: unwantedIds } } });
     }
 
     // 2. Create Faculties
-    const faculties = [
-        { name: 'Faculty of Design Innovation' },
-        { name: 'Faculty of Information & Communication Technology' },
-        { name: 'Faculty of Business Management & Globalisation' },
-        { name: 'Faculty of Communication, Media & Broadcasting' },
-        { name: 'Faculty of Architecture & The Built Environment' },
-        { name: 'Faculty of Multimedia Creativity' },
-        { name: 'Faculty of Fashion & Lifestyle Creativity' }
-    ];
+    const faculties = ALLOWED_FACULTIES.map(name => ({ name }));
 
     for (const f of faculties) {
         await prisma.faculty.upsert({
@@ -55,16 +82,7 @@ async function main() {
     });
 
     const programsByFaculty: Record<string, string[]> = {
-        'Faculty of Design Innovation': [
-            'Professional Design (Visual Communication)',
-            'Industrial Design',
-            'Brand Packaging Design',
-            'Product Design & Innovation',
-            'Graphic Design',
-            'Product Design',
-            'Packaging Design & Technology'
-        ],
-        'Faculty of Information & Communication Technology': [
+        'Faculty of Information & Communication Technology (FICT)': [
             'Information Technology (BIT)',
             'Software Engineering with Multimedia (BSEM)',
             'Business Information Technology (BBIT)',
@@ -72,24 +90,7 @@ async function main() {
             'Mobile Computing',
             'Cloud Computing Technology'
         ],
-        'Faculty of Business Management & Globalisation': [
-            'Business Administration',
-            'International Business',
-            'Accounting',
-            'Marketing',
-            'Human Resource Management',
-            'Entrepreneurship'
-        ],
-        'Faculty of Communication, Media & Broadcasting': [
-            'Broadcasting and Journalism',
-            'Professional Communication',
-            'Digital Film and Television',
-            'Event Management',
-            'Public Relations',
-            'Journalism and Media',
-            'Broadcasting (Radio & TV)'
-        ],
-        'Faculty of Architecture & The Built Environment': [
+        'Faculty of Architecture & The Built Environment (FABE)': [
             'Architectural Studies',
             'Interior Architecture',
             'Landscape Architecture',
@@ -97,20 +98,14 @@ async function main() {
             'Architectural Technology',
             'Interior Design'
         ],
-        'Faculty of Multimedia Creativity': [
-            'Creative Multimedia',
-            'Games Design',
-            'Animation',
-            'Games Art Development',
-            'Animation & Multimedia Design',
-            'Games Art'
-        ],
-        'Faculty of Fashion & Lifestyle Creativity': [
-            'Fashion and Retailing',
-            'Fashion Design',
-            'Fashion and Apparel Design',
-            'Hair Design',
-            'Batik Design'
+        'Faculty of Communication, Media & Broadcasting (FCMB)': [
+            'Broadcasting and Journalism',
+            'Professional Communication',
+            'Digital Film and Television',
+            'Event Management',
+            'Public Relations',
+            'Journalism and Media',
+            'Broadcasting (Radio & TV)'
         ]
     };
 
@@ -129,30 +124,41 @@ async function main() {
         });
     }
 
-    const modulesToSeed = [
-        { name: 'Software Engineering', code: 'ICT201', credits: 4, facultyName: 'Faculty of Information & Communication Technology' },
-        { name: 'Database Systems', code: 'ICT202', credits: 4, facultyName: 'Faculty of Information & Communication Technology' },
-        { name: 'Web Development', code: 'ICT203', credits: 3, facultyName: 'Faculty of Information & Communication Technology' },
-        { name: 'Marketing Strategy', code: 'BBMG401', credits: 4, facultyName: 'Faculty of Business Management & Globalisation' },
-        { name: 'Corporate Finance', code: 'BBMG402', credits: 4, facultyName: 'Faculty of Business Management & Globalisation' },
-        { name: 'Business Ethics', code: 'BBMG403', credits: 3, facultyName: 'Faculty of Business Management & Globalisation' }
-    ];
-
-    for (const module of modulesToSeed) {
-        const facultyId = facultyIdMap[module.facultyName];
+    // Seed modules for all faculties (MVP: same modules for all faculties)
+    // Since this is an MVP, we'll use the same modules for all faculties
+    console.log('Seeding modules for all faculties...');
+    
+    for (const facultyName of ALLOWED_FACULTIES) {
+        const facultyId = facultyIdMap[facultyName];
         if (!facultyId) continue;
 
-        await prisma.module.upsert({
-            where: { code: module.code },
-            update: {},
-            create: {
-                name: module.name,
-                code: module.code,
-                credits: module.credits,
-                facultyId
-            }
-        });
+        // Delete existing modules for this faculty
+        await prisma.module.deleteMany({ where: { facultyId } });
+
+        // Create all modules for this faculty
+        for (const moduleData of ALL_MODULES) {
+            await prisma.module.upsert({
+                where: { code: moduleData.code },
+                update: {
+                    name: moduleData.name,
+                    credits: moduleData.credits,
+                    semester: moduleData.semester,
+                    yearLevel: moduleData.yearLevel,
+                    facultyId
+                },
+                create: {
+                    name: moduleData.name,
+                    code: moduleData.code,
+                    credits: moduleData.credits,
+                    semester: moduleData.semester,
+                    yearLevel: moduleData.yearLevel,
+                    facultyId
+                }
+            });
+        }
     }
+    
+    console.log(`Seeded ${ALL_MODULES.length} modules for each faculty.`);
 
     // 3. Create System Admin in Supabase Auth and DB
     const adminEmail = 'system.admin@limkokwing.edu.sl';

@@ -2,6 +2,7 @@ import React from 'react';
 import { Module } from '../../../types';
 import { Button } from '../../ui';
 import { calculateTotalCredits } from '../../../utils';
+import LoadingSpinner from '../../LoadingSpinner';
 
 interface ModuleSelectionStepProps {
   modules: Module[];
@@ -9,6 +10,7 @@ interface ModuleSelectionStepProps {
   onToggleModule: (module: Module) => void;
   onBack: () => void;
   onNext: () => void;
+  loading?: boolean;
 }
 
 const ModuleSelectionStep: React.FC<ModuleSelectionStepProps> = ({
@@ -16,10 +18,27 @@ const ModuleSelectionStep: React.FC<ModuleSelectionStepProps> = ({
   selectedModules,
   onToggleModule,
   onBack,
-  onNext
+  onNext,
+  loading = false
 }) => {
   const totalCredits = calculateTotalCredits(selectedModules);
   const isValid = selectedModules.length === 6;
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-gray-100 pb-4">
+          <div>
+            <h3 className="text-lg font-black uppercase tracking-tight">Select Modules</h3>
+            <p className="text-xs text-gray-500">Loading modules for this semester...</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <LoadingSpinner />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -39,8 +58,15 @@ const ModuleSelectionStep: React.FC<ModuleSelectionStepProps> = ({
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {modules.map((mod) => {
+      {modules.length === 0 ? (
+        <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-xl">
+          <p className="text-xs font-bold text-yellow-800">
+            No modules available for this semester. Please contact your administrator.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {modules.map((mod) => {
           const checked = !!selectedModules.find((m) => m.id === mod.id);
           return (
             <label
@@ -81,7 +107,8 @@ const ModuleSelectionStep: React.FC<ModuleSelectionStepProps> = ({
             </label>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {!isValid && (
         <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-xl flex items-start space-x-3">

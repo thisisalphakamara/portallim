@@ -1,7 +1,6 @@
 import React from 'react';
 import { User, UserRole, RegistrationSubmission } from '../types';
 import YearLeaderDashboard from './YearLeaderDashboard';
-import FacultyAdminDashboard from './FacultyAdminDashboard';
 import FinanceOfficerDashboard from './FinanceOfficerDashboard';
 import RegistrarDashboard from './RegistrarDashboard';
 
@@ -15,10 +14,6 @@ interface StaffDashboardProps {
 const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, submissions, onApprove, onReject }) => {
   if (user.role === UserRole.YEAR_LEADER) {
     return <YearLeaderDashboard user={user} submissions={submissions} onApprove={onApprove} onReject={onReject} />;
-  }
-
-  if (user.role === UserRole.FACULTY_ADMIN) {
-    return <FacultyAdminDashboard user={user} submissions={submissions} onApprove={onApprove} onReject={onReject} />;
   }
 
   if (user.role === UserRole.FINANCE_OFFICER) {

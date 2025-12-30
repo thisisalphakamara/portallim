@@ -5,7 +5,6 @@ import StudentRegistration from './components/StudentRegistration';
 import StaffDashboard from './components/StaffDashboard';
 import AccountCreation from './components/AccountCreation';
 import ProfilePage from './components/ProfilePage';
-import NotificationsPage from './components/NotificationsPage';
 import SystemAdminDashboard from './components/SystemAdminDashboard';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import StudentAccountsList from './components/StudentAccountsList';
@@ -384,11 +383,6 @@ const App: React.FC = () => {
       return <ProfilePage user={user} onUpdateProfile={handleUpdateProfile} />;
     }
 
-    // Notifications page for all users
-    if (activePage === 'notifications') {
-      return <NotificationsPage userRole={user.role} />;
-    }
-
     // Account creation for Registrar and System Admin
     if (activePage === 'accounts' && (user.role === UserRole.REGISTRAR || user.role === UserRole.SYSTEM_ADMIN)) {
       return <AccountCreation currentUser={user} onAccountCreated={(newUser) => setCreatedAccounts([...createdAccounts, newUser])} />;
@@ -415,7 +409,7 @@ const App: React.FC = () => {
       return <SystemAdminDashboard />;
     }
 
-    // Staff dashboard (Year Leader, Faculty Admin, Finance, Registrar)
+    // Staff dashboard (Year Leader, Finance, Registrar)
     if (activePage === 'dashboard') {
       return (
         <StaffDashboard
@@ -436,7 +430,6 @@ const App: React.FC = () => {
       onLogout={handleLogout}
       activePage={activePage}
       onNavigate={handleNavigate}
-      notificationCount={1}
     >
       {showFirstLoginModal && (
         <ChangePasswordModal

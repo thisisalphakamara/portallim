@@ -140,7 +140,7 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
     }
 
     // Role specific requirements
-    if ((role === UserRole.YEAR_LEADER || role === UserRole.FACULTY_ADMIN) && !selectedFacultyId) {
+    if (role === UserRole.YEAR_LEADER && !selectedFacultyId) {
       alert('Please select a faculty for this role');
       return;
     }
@@ -318,7 +318,6 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
             >
               <option value={UserRole.REGISTRAR}>Registrar</option>
               <option value={UserRole.FINANCE_OFFICER}>Finance Officer</option>
-              <option value={UserRole.FACULTY_ADMIN}>Faculty Admin</option>
               <option value={UserRole.YEAR_LEADER}>Year Leader</option>
             </select>
           </div>
@@ -364,7 +363,7 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
           </div>
         </div>
 
-        {(role === UserRole.STUDENT || role === UserRole.FACULTY_ADMIN || role === UserRole.YEAR_LEADER) && (
+        {(role === UserRole.STUDENT || role === UserRole.YEAR_LEADER) && (
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-widest">Faculty *</label>
             <select

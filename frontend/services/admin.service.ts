@@ -16,8 +16,15 @@ export const getProgramsByFaculty = async (facultyId: string) => {
     return api.get(`/data/programs/${facultyId}`);
 };
 
-export const getModulesByFaculty = async (facultyId: string) => {
-    return api.get(`/data/modules/${facultyId}`);
+// In the current MVP, modules are global (shared across faculties).
+// We keep the function name for backwards compatibility, but the
+// facultyId argument is intentionally ignored.
+export const getModulesByFaculty = async (_facultyId: string, semester?: number, yearLevel?: number) => {
+    const params = new URLSearchParams();
+    if (semester !== undefined) params.append('semester', semester.toString());
+    if (yearLevel !== undefined) params.append('yearLevel', yearLevel.toString());
+    const queryString = params.toString();
+    return api.get(`/data/modules${queryString ? `?${queryString}` : ''}`);
 };
 
 export const getSystemStats = async () => {

@@ -55,7 +55,7 @@ export const getSystemStats = async (req: any, res: Response) => {
         const activeStudents = await prisma.user.count({ where: { role: Role.STUDENT } });
         const staffMembers = await prisma.user.count({
             where: {
-                role: { in: [Role.REGISTRAR, Role.FINANCE_OFFICER, Role.FACULTY_ADMIN, Role.YEAR_LEADER, Role.SYSTEM_ADMIN] }
+                role: { in: [Role.REGISTRAR, Role.FINANCE_OFFICER, Role.YEAR_LEADER, Role.SYSTEM_ADMIN] }
             }
         });
         const pendingRegistrations = await prisma.submission.count({
@@ -63,6 +63,19 @@ export const getSystemStats = async (req: any, res: Response) => {
                 status: { notIn: ['APPROVED', 'REJECTED'] }
             }
         });
+        const facultyCountsRaw = await prisma.faculty.findMany({
+            include: {
+                _count: {
+                    select: {
+                        submissions: true
+                    }
+                }
+            }
+        });
+        const facultyCounts = facultyCountsRaw.map((faculty) => ({
+            faculty: faculty.name,
+            count: faculty._count.submissions
+        }));
 
         res.json({
             success: true,
@@ -71,6 +84,7 @@ export const getSystemStats = async (req: any, res: Response) => {
                 activeStudents,
                 staffMembers,
                 pendingRegistrations,
+                facultyCounts,
                 systemUptime: '99.9%', // Mocked for simplicity
                 lastBackup: new Date().toISOString()
             }
@@ -115,7 +129,7 @@ export const getAllStaff = async (req: any, res: Response) => {
         const staff = await prisma.user.findMany({
             where: {
                 role: {
-                    in: [Role.REGISTRAR, Role.FINANCE_OFFICER, Role.FACULTY_ADMIN, Role.YEAR_LEADER]
+                    in: [Role.REGISTRAR, Role.FINANCE_OFFICER, Role.YEAR_LEADER]
                 }
             },
             include: { faculty: true }

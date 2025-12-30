@@ -21,8 +21,7 @@ export const useSubmissions = () => {
         if (s.id !== id) return s;
 
         let nextStatus = s.status;
-        if (userRole === UserRole.YEAR_LEADER) nextStatus = RegistrationStatus.PENDING_FACULTY_ADMIN;
-        else if (userRole === UserRole.FACULTY_ADMIN) nextStatus = RegistrationStatus.PENDING_FINANCE;
+        if (userRole === UserRole.YEAR_LEADER) nextStatus = RegistrationStatus.PENDING_FINANCE;
         else if (userRole === UserRole.FINANCE_OFFICER) nextStatus = RegistrationStatus.PENDING_REGISTRAR;
         else if (userRole === UserRole.REGISTRAR) nextStatus = RegistrationStatus.APPROVED;
 

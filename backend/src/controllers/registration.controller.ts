@@ -1,44 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { ApprovalStatus, Role } from '@prisma/client';
-import { notifyStudent } from '../services/notification.service';
-
-const buildRecipientFromUser = (user: any) => ({
-    email: user.email,
-    phoneNumber: user.phoneNumber,
-    fullName: user.fullName
-});
-
-const stageNotifications: Record<Role, { subject: string; message: (submission: any) => string }> = {
-    [Role.YEAR_LEADER]: {
-        subject: 'Registration Received by Year Leader',
-        message: (submission) =>
-            `Your registration for ${submission.semester} ${submission.academicYear} has been approved by the Year Leader and is now forwarded to the Faculty Admin for review.`
-    },
-    [Role.FACULTY_ADMIN]: {
-        subject: 'Faculty Admin Approval Complete',
-        message: (submission) =>
-            `The Faculty Admin within ${submission.faculty.name} has approved your registration for ${submission.semester} ${submission.academicYear} and forwarded it to the Finance Department.`
-    },
-    [Role.FINANCE_OFFICER]: {
-        subject: 'Finance Verification Complete',
-        message: (submission) =>
-            `Finance has verified payment for your registration (${submission.semester} ${submission.academicYear}) and it has been routed to the Registrar for final approval.`
-    },
-    [Role.REGISTRAR]: {
-        subject: 'Registration Fully Approved',
-        message: (submission) =>
-            `Your registration for ${submission.semester} ${submission.academicYear} has received the Registrar's final approval. You are fully registered for the semester.`
-    },
-    [Role.SYSTEM_ADMIN]: {
-        subject: 'System Update',
-        message: () => 'An administrative role made a change to your registration.'
-    },
-    [Role.STUDENT]: {
-        subject: 'Registration Update',
-        message: () => 'Your registration status changed.'
-    }
-};
 
 export const submitRegistration = async (req: any, res: Response) => {
     const { semester, academicYear, modules, enrollmentIntake, yearLevel } = req.body;
@@ -52,6 +14,20 @@ export const submitRegistration = async (req: any, res: Response) => {
         // Check if faculty and program are assigned
         if (!student.facultyId || !student.programId) {
             return res.status(400).json({ error: 'Student must have a faculty and program assigned' });
+        }
+
+        const existingSubmission = await prisma.submission.findFirst({
+            where: {
+                studentId: student.id,
+                semester,
+                academicYear
+            }
+        });
+
+        if (existingSubmission) {
+            return res.status(409).json({
+                error: `Registration already submitted for ${semester} ${academicYear}.`
+            });
         }
 
         const submission = await prisma.submission.create({
@@ -78,18 +54,13 @@ export const submitRegistration = async (req: any, res: Response) => {
             }
         });
 
-        try {
-            await notifyStudent(
-                buildRecipientFromUser(student),
-                'Registration Submitted',
-                `Your registration for ${semester} ${academicYear} has been submitted and routed to your faculty Year Leader (${student.faculty?.name || 'Faculty'}) for review.`
-            );
-        } catch (notificationError) {
-            console.error('Failed to send submission notification:', notificationError);
-        }
-
         res.status(201).json({ success: true, submission });
     } catch (error: any) {
+        if (error.code === 'P2002') {
+            return res.status(409).json({
+                error: `Registration already exists for ${semester} ${academicYear}.`
+            });
+        }
         res.status(500).json({ error: error.message });
     }
 };
@@ -101,7 +72,7 @@ export const getRegistrations = async (req: any, res: Response) => {
         let where: any = {};
 
         // Faculty-based routing rule: Academic staff only see their faculty
-        if (user.role === Role.YEAR_LEADER || user.role === Role.FACULTY_ADMIN) {
+        if (user.role === Role.YEAR_LEADER) {
             if (!user.facultyId) return res.status(403).json({ error: 'Staff member must be assigned to a faculty' });
             where.facultyId = user.facultyId;
         }
@@ -158,7 +129,7 @@ export const approveRegistration = async (req: any, res: Response) => {
         if (!submission) return res.status(404).json({ error: 'Registration not found' });
 
         // Faculty check for academic staff
-        if ((user.role === Role.YEAR_LEADER || user.role === Role.FACULTY_ADMIN) && user.facultyId !== submission.facultyId) {
+        if (user.role === Role.YEAR_LEADER && user.facultyId !== submission.facultyId) {
             return res.status(403).json({ error: 'You can only approve registrations in your faculty' });
         }
 
@@ -168,10 +139,6 @@ export const approveRegistration = async (req: any, res: Response) => {
         switch (user.role) {
             case Role.YEAR_LEADER:
                 if (submission.status !== ApprovalStatus.PENDING_YEAR_LEADER) return res.status(400).json({ error: 'Invalid stage' });
-                nextStatus = ApprovalStatus.PENDING_FACULTY_ADMIN;
-                break;
-            case Role.FACULTY_ADMIN:
-                if (submission.status !== ApprovalStatus.PENDING_FACULTY_ADMIN) return res.status(400).json({ error: 'Invalid stage' });
                 nextStatus = ApprovalStatus.PENDING_FINANCE;
                 break;
             case Role.FINANCE_OFFICER:
@@ -203,19 +170,6 @@ export const approveRegistration = async (req: any, res: Response) => {
                 comments
             }
         });
-        try {
-            const notification = stageNotifications[user.role as Role];
-            if (notification && updated.student) {
-                await notifyStudent(
-                    buildRecipientFromUser(updated.student),
-                    notification.subject,
-                    notification.message(updated)
-                );
-            }
-        } catch (notificationError) {
-            console.error('Failed to send approval notification:', notificationError);
-        }
-
         res.json({ success: true, submission: updated });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -242,16 +196,6 @@ export const rejectRegistration = async (req: any, res: Response) => {
                 comments
             }
         });
-
-        try {
-            await notifyStudent(
-                buildRecipientFromUser(updated.student),
-                'Registration Rejected',
-                `Your registration was rejected by ${user.role.replace('_', ' ').toLowerCase()}. Comments: ${comments || 'No reason provided'}.`
-            );
-        } catch (notificationError) {
-            console.error('Failed to send rejection notification:', notificationError);
-        }
 
         res.json({ success: true, submission: updated });
     } catch (error: any) {

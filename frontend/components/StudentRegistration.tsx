@@ -10,21 +10,13 @@ import {
   RegistrationPending
 } from './features/registration';
 import { getYearForSemester, generateSubmissionId } from '../utils';
+import { getModulesByFaculty } from '../services/admin.service';
 
 interface StudentRegistrationProps {
   user: User;
   onSubmitted: (submission: RegistrationSubmission) => void;
   existingSubmission: RegistrationSubmission | null;
 }
-
-const defaultModules: Module[] = [
-  { id: 'mod1', name: 'Fundamental of Computer Systems', code: 'FCS101', credits: 3 },
-  { id: 'mod2', name: 'Mathematics for Computing', code: 'MFC102', credits: 3 },
-  { id: 'mod3', name: 'Introduction to Programming', code: 'ITP103', credits: 3 },
-  { id: 'mod4', name: 'Multimedia Technology', code: 'MMT104', credits: 3 },
-  { id: 'mod5', name: 'Communication Skills', code: 'CS105', credits: 3 },
-  { id: 'mod6', name: 'Creative Studies', code: 'CRS106', credits: 3 }
-];
 
 const StudentRegistration: React.FC<StudentRegistrationProps> = ({
   user,
@@ -35,6 +27,8 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
   const [semester, setSemester] = useState('Semester 1');
   const [academicYear, setAcademicYear] = useState('Year 1');
   const [selectedModules, setSelectedModules] = useState<Module[]>([]);
+  const [availableModules, setAvailableModules] = useState<Module[]>([]);
+  const [modulesLoading, setModulesLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(user.phoneNumber || '');
   const [sponsorType, setSponsorType] = useState(user.sponsorType || 'Self');
   const [enrollmentMonthYear, setEnrollmentMonthYear] = useState(
@@ -50,6 +44,44 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
   useEffect(() => {
     setAcademicYear(getYearForSemester(semester));
   }, [semester]);
+
+  // Fetch modules when semester or academic year changes
+  useEffect(() => {
+    const fetchModules = async () => {
+      const semesterNumber = parseInt(semester.replace('Semester ', ''));
+      const yearLevel = parseInt(academicYear.replace('Year ', ''));
+
+      if (isNaN(semesterNumber) || isNaN(yearLevel)) {
+        console.warn('Invalid semester or year level');
+        return;
+      }
+
+      setModulesLoading(true);
+      try {
+        // Modules are shared across all faculties in this MVP, so we don't
+        // need to filter by faculty when fetching them.
+        const result = await getModulesByFaculty('', semesterNumber, yearLevel);
+        if (result.success && result.modules) {
+          setAvailableModules(result.modules);
+          // Clear selected modules if they're not in the new list
+          setSelectedModules(prev => 
+            prev.filter(selected => 
+              result.modules.some((m: Module) => m.id === selected.id)
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching modules:', error);
+      } finally {
+        setModulesLoading(false);
+      }
+    };
+
+    // Only fetch if we're on step 2 or about to go to step 2
+    if (step >= 2) {
+      fetchModules();
+    }
+  }, [semester, academicYear, step]);
 
   if (existingSubmission) {
     const isFullyApproved = existingSubmission.status === RegistrationStatus.APPROVED;
@@ -129,11 +161,12 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
 
         {step === 2 && (
           <ModuleSelectionStep
-            modules={defaultModules}
+            modules={availableModules}
             selectedModules={selectedModules}
             onToggleModule={handleToggleModule}
             onBack={() => setStep(1)}
             onNext={() => setStep(3)}
+            loading={modulesLoading}
           />
         )}
 

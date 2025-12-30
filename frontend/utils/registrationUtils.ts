@@ -4,7 +4,6 @@ export const getStatusLabel = (status: RegistrationStatus): string => {
   const labels: Record<RegistrationStatus, string> = {
     [RegistrationStatus.NOT_STARTED]: 'Not Started',
     [RegistrationStatus.PENDING_YEAR_LEADER]: 'Awaiting Year Leader Approval',
-    [RegistrationStatus.PENDING_FACULTY_ADMIN]: 'Awaiting Faculty Admin Approval',
     [RegistrationStatus.PENDING_FINANCE]: 'Awaiting Finance Verification',
     [RegistrationStatus.PENDING_REGISTRAR]: 'Awaiting Registrar Final Approval',
     [RegistrationStatus.APPROVED]: 'Approved',

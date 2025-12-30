@@ -5,6 +5,7 @@ const router = Router();
 
 router.get('/faculties', getFaculties);
 router.get('/programs/:facultyId', getPrograms);
-router.get('/modules/:facultyId', getModules);
+// Modules are global (shared across faculties) in this MVP
+router.get('/modules', getModules);
 
 export default router;

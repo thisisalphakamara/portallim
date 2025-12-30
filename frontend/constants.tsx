@@ -2,26 +2,13 @@
 import { Faculty, Module, UserRole, RegistrationStatus } from './types';
 
 export const FACULTIES: Faculty[] = [
-  'Faculty of Design Innovation',
-  'Faculty of Information & Communication Technology',
-  'Faculty of Business Management & Globalisation',
-  'Faculty of Communication, Media & Broadcasting',
-  'Faculty of Architecture & The Built Environment',
-  'Faculty of Multimedia Creativity',
-  'Faculty of Fashion & Lifestyle Creativity'
+  'Faculty of Information & Communication Technology (FICT)',
+  'Faculty of Architecture & The Built Environment (FABE)',
+  'Faculty of Communication, Media & Broadcasting (FCMB)'
 ];
 
 export const PROGRAMS_BY_FACULTY: Record<Faculty, string[]> = {
-  'Faculty of Design Innovation': [
-    'Professional Design (Visual Communication)',
-    'Industrial Design',
-    'Brand Packaging Design',
-    'Product Design & Innovation',
-    'Graphic Design',
-    'Product Design',
-    'Packaging Design & Technology'
-  ],
-  'Faculty of Information & Communication Technology': [
+  'Faculty of Information & Communication Technology (FICT)': [
     'Information Technology (BIT)',
     'Software Engineering with Multimedia (BSEM)',
     'Business Information Technology (BBIT)',
@@ -29,24 +16,7 @@ export const PROGRAMS_BY_FACULTY: Record<Faculty, string[]> = {
     'Mobile Computing',
     'Cloud Computing Technology'
   ],
-  'Faculty of Business Management & Globalisation': [
-    'Business Administration',
-    'International Business',
-    'Accounting',
-    'Marketing',
-    'Human Resource Management',
-    'Entrepreneurship'
-  ],
-  'Faculty of Communication, Media & Broadcasting': [
-    'Broadcasting and Journalism',
-    'Professional Communication',
-    'Digital Film and Television',
-    'Event Management',
-    'Public Relations',
-    'Journalism and Media',
-    'Broadcasting (Radio & TV)'
-  ],
-  'Faculty of Architecture & The Built Environment': [
+  'Faculty of Architecture & The Built Environment (FABE)': [
     'Architectural Studies',
     'Interior Architecture',
     'Landscape Architecture',
@@ -54,20 +24,14 @@ export const PROGRAMS_BY_FACULTY: Record<Faculty, string[]> = {
     'Architectural Technology',
     'Interior Design'
   ],
-  'Faculty of Multimedia Creativity': [
-    'Creative Multimedia',
-    'Games Design',
-    'Animation',
-    'Games Art Development',
-    'Animation & Multimedia Design',
-    'Games Art'
-  ],
-  'Faculty of Fashion & Lifestyle Creativity': [
-    'Fashion and Retailing',
-    'Fashion Design',
-    'Fashion and Apparel Design',
-    'Hair Design',
-    'Batik Design'
+  'Faculty of Communication, Media & Broadcasting (FCMB)': [
+    'Broadcasting and Journalism',
+    'Professional Communication',
+    'Digital Film and Television',
+    'Event Management',
+    'Public Relations',
+    'Journalism and Media',
+    'Broadcasting (Radio & TV)'
   ]
 };
 

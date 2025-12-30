@@ -83,8 +83,11 @@ export const login = async (req: Request, res: Response) => {
                 role: user.role,
                 isFirstLogin: user.isFirstLogin,
                 faculty: user.faculty?.name,
+                facultyId: user.facultyId,
                 program: user.program?.name,
-                studentId: user.studentId
+                studentId: user.studentId,
+                phoneNumber: user.phoneNumber,
+                sponsorType: user.sponsorType
             }
         });
     } catch (error: any) {
@@ -122,19 +125,34 @@ export const changePassword = async (req: any, res: Response) => {
 };
 
 export const getMe = async (req: any, res: Response) => {
-    const user = req.user;
-    res.json({
-        success: true,
-        user: {
-            id: user.id,
-            email: user.email,
-            name: user.fullName || user.name, // Support both fields
-            fullName: user.fullName,
-            role: user.role,
-            isFirstLogin: user.isFirstLogin,
-            faculty: user.faculty?.name,
-            program: user.program?.name,
-            studentId: user.studentId
+    try {
+        const dbUser = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            include: { faculty: true, program: true }
+        });
+
+        if (!dbUser) {
+            return res.status(404).json({ error: 'User not found' });
         }
-    });
+
+        res.json({
+            success: true,
+            user: {
+                id: dbUser.id,
+                email: dbUser.email,
+                name: dbUser.fullName,
+                fullName: dbUser.fullName,
+                role: dbUser.role,
+                isFirstLogin: dbUser.isFirstLogin,
+                faculty: dbUser.faculty?.name,
+                facultyId: dbUser.facultyId,
+                program: dbUser.program?.name,
+                studentId: dbUser.studentId,
+                phoneNumber: dbUser.phoneNumber,
+            sponsorType: dbUser.sponsorType
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
 };

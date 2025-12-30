@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { UserRole } from '../types';
 import { FACULTIES } from '../constants';
 import { StatCard, Table, Select, Button } from './ui';
@@ -14,11 +14,21 @@ interface AuditLog {
   ipAddress: string;
 }
 
+interface FacultyCount {
+  faculty: string;
+  count: number;
+}
+
+interface FacultyDisplayData extends FacultyCount {
+  width: number;
+}
+
 interface SystemStats {
   totalUsers: number;
   activeStudents: number;
   staffMembers: number;
   pendingRegistrations: number;
+  facultyCounts: FacultyCount[];
   systemUptime: string;
   lastBackup: string;
 }
@@ -34,6 +44,22 @@ const SystemAdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const facultyDisplayData = useMemo<FacultyDisplayData[]>(() => {
+    const counts = stats?.facultyCounts ?? [];
+    const entries = FACULTIES.map((faculty) => {
+      const facultyRecord = counts.find((item) => item.faculty === faculty);
+      return {
+        faculty,
+        count: facultyRecord?.count ?? 0
+      };
+    });
+    const maxCount = Math.max(1, ...entries.map((entry) => entry.count));
+
+    return entries.map((entry) => ({
+      ...entry,
+      width: Math.max(8, Math.round((entry.count / maxCount) * 100))
+    }));
+  }, [stats]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -146,22 +172,22 @@ const SystemAdminDashboard: React.FC = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <StatCard
               label="Total Users"
-              value={stats?.totalUsers.toString() || '0'}
+              value={(stats ? stats.totalUsers.toString() : '0')}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
             />
             <StatCard
               label="Active Students"
-              value={stats?.activeStudents.toString() || '0'}
+              value={(stats ? stats.activeStudents.toString() : '0')}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
             />
             <StatCard
               label="Staff"
-              value={stats?.staffMembers.toString() || '0'}
+              value={(stats ? stats.staffMembers.toString() : '0')}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
             />
             <StatCard
               label="Pending"
-              value={stats?.pendingRegistrations.toString() || '0'}
+              value={(stats ? stats.pendingRegistrations.toString() : '0')}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
             />
           </div>
@@ -210,17 +236,17 @@ const SystemAdminDashboard: React.FC = () => {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h4 className="text-sm font-bold uppercase tracking-widest mb-6">Users by Faculty</h4>
             <div className="space-y-6">
-              {FACULTIES.map((faculty, index) => (
-                <div key={faculty} className="flex items-center space-x-4">
+              {facultyDisplayData.map((facultyData) => (
+                <div key={facultyData.faculty} className="flex items-center space-x-4">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-gray-700">{faculty}</span>
-                      <span className="text-xs font-mono font-bold">{[312, 287, 245, 198][index]}</span>
+                      <span className="text-xs font-bold text-gray-700">{facultyData.faculty}</span>
+                      <span className="text-xs font-mono font-bold">{facultyData.count.toLocaleString()}</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-black rounded-full transition-all duration-1000"
-                        style={{ width: `${[100, 92, 78, 63][index]}%` }}
+                        className="h-full bg-gradient-to-r from-black to-zinc-800 rounded-full transition-all duration-800"
+                        style={{ width: `${facultyData.width}%` }}
                       />
                     </div>
                   </div>
@@ -283,7 +309,7 @@ const SystemAdminDashboard: React.FC = () => {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h4 className="text-sm font-bold uppercase tracking-widest mb-4">User Management</h4>
             <p className="text-sm text-gray-500 mb-6">
-              System Administrators are responsible for creating and managing staff accounts (Registrar, Finance, Faculty Admin, and Year Leaders). Student accounts are managed exclusively by the Registrar department.
+              System Administrators are responsible for creating and managing staff accounts (Registrar, Finance, and Year Leaders). Student accounts are managed exclusively by the Registrar department.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button variant="outline" fullWidth onClick={() => setActiveSection('users')}>Manage Staff Roles</Button>

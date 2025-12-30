@@ -1,7 +1,6 @@
 export enum UserRole {
   STUDENT = 'STUDENT',
   YEAR_LEADER = 'YEAR_LEADER',
-  FACULTY_ADMIN = 'FACULTY_ADMIN',
   FINANCE_OFFICER = 'FINANCE_OFFICER',
   REGISTRAR = 'REGISTRAR',
   SYSTEM_ADMIN = 'SYSTEM_ADMIN'
@@ -23,7 +22,6 @@ export type Faculty = string;
 export enum RegistrationStatus {
   NOT_STARTED = 'NOT_STARTED',
   PENDING_YEAR_LEADER = 'PENDING_YEAR_LEADER',
-  PENDING_FACULTY_ADMIN = 'PENDING_FACULTY_ADMIN',
   PENDING_FINANCE = 'PENDING_FINANCE',
   PENDING_REGISTRAR = 'PENDING_REGISTRAR',
   APPROVED = 'APPROVED',
@@ -36,6 +34,7 @@ export interface User {
   email: string;
   role: UserRole;
   faculty?: string;
+  facultyId?: string;
   program?: string;
   studentId?: string;
   nationalId?: string;

@@ -13,7 +13,7 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, onReview }) => {
     {
       header: 'Student ID',
       accessor: (row: RegistrationSubmission) => (
-        <span className="font-mono font-bold">#{truncateId(row.id)}</span>
+        <span className="font-mono font-bold">#{truncateId(row.studentId)}</span>
       )
     },
     {

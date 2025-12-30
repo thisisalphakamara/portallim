@@ -11,7 +11,6 @@ export function getRoleDisplayName(role: UserRole): string {
     const roleNames: Record<UserRole, string> = {
         [UserRole.STUDENT]: 'Student',
         [UserRole.YEAR_LEADER]: 'Year Leader',
-        [UserRole.FACULTY_ADMIN]: 'Faculty Admin',
         [UserRole.FINANCE_OFFICER]: 'Finance Officer',
         [UserRole.REGISTRAR]: 'Registrar',
         [UserRole.SYSTEM_ADMIN]: 'System Admin',

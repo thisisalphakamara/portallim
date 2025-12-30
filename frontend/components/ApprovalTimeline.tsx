@@ -4,14 +4,12 @@ import { RegistrationSubmission } from '../types';
 const ApprovalTimeline: React.FC<{ submission: RegistrationSubmission }> = ({ submission }) => {
   const steps = [
     { key: 'YEAR_LEADER', label: 'Year Leader', status: 'PENDING_YEAR_LEADER' },
-    { key: 'FACULTY_ADMIN', label: 'Faculty Admin', status: 'PENDING_FACULTY_ADMIN' },
     { key: 'FINANCE', label: 'Finance', status: 'PENDING_FINANCE' },
     { key: 'REGISTRAR', label: 'Registrar', status: 'PENDING_REGISTRAR' },
   ];
 
   const statusOrder = [
     'PENDING_YEAR_LEADER',
-    'PENDING_FACULTY_ADMIN',
     'PENDING_FINANCE',
     'PENDING_REGISTRAR',
     'APPROVED',

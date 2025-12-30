@@ -3,7 +3,7 @@ import React from 'react';
 import { User, UserRole } from '../types';
 import limlogo from '../assets/limlogo.png';
 
-export type ActivePage = 'dashboard' | 'profile' | 'accounts' | 'approvals' | 'notifications';
+export type ActivePage = 'dashboard' | 'profile' | 'accounts' | 'approvals';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,10 +11,9 @@ interface LayoutProps {
   onLogout: () => void;
   activePage: ActivePage;
   onNavigate: (page: ActivePage) => void;
-  notificationCount?: number;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, onNavigate, notificationCount = 0 }) => {
+const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [sidebarVisible, setSidebarVisible] = React.useState(true);
 
@@ -99,7 +98,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
                 onClick={() => handleNavigate('approvals')}
                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
               />
-            ) : user.role !== UserRole.STUDENT && (
+            ) : (user.role !== UserRole.STUDENT && user.role !== UserRole.SYSTEM_ADMIN) && (
               <NavItem
                 label="Approvals"
                 active={activePage === 'approvals'}
@@ -107,13 +106,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
               />
             )}
-            <NavItem
-              label="Notifications"
-              active={activePage === 'notifications'}
-              onClick={() => handleNavigate('notifications')}
-              badge={notificationCount > 0 ? notificationCount : undefined}
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>}
-            />
           </nav>
 
           <div className="p-4 border-t border-gray-800">
@@ -149,20 +141,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
                 </h2>
               </div>
               <div className="flex items-center space-x-6">
-                {/* Notification Bell */}
-                <button
-                  className="relative group p-2 rounded-full hover:bg-gray-100 transition-colors"
-                  onClick={() => handleNavigate('notifications')}
-                >
-                  <svg className="w-6 h-6 text-gray-600 group-hover:text-black transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  {notificationCount > 0 && (
-                    <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-                      {notificationCount > 99 ? '99+' : notificationCount}
-                    </span>
-                  )}
-                </button>
               </div>
             </header>
 
