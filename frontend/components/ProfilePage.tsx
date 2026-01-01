@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
 import ChangePasswordModal from './ChangePasswordModal';
+import ChangeEmailModal from './ChangeEmailModal';
 
 interface ProfilePageProps {
   user: User;
@@ -11,17 +12,20 @@ interface ProfilePageProps {
 const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdateProfile }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const [editedName, setEditedName] = useState(user.name);
   const [editedPhone, setEditedPhone] = useState(user.phoneNumber || '');
-  const [editedAddress, setEditedAddress] = useState('');
-  const [editedSponsorType, setEditedSponsorType] = useState(user.sponsorType || 'Self');
   const [showAcademic, setShowAcademic] = useState(true);
   const [showSecurity, setShowSecurity] = useState(false);
 
   const handleSave = () => {
-    onUpdateProfile({ name: editedName, phoneNumber: editedPhone, sponsorType: editedSponsorType });
+    onUpdateProfile({ name: editedName, phoneNumber: editedPhone });
     setIsEditing(false);
     alert('Profile updated successfully');
+  };
+
+  const handleEmailChanged = (newEmail: string) => {
+    onUpdateProfile({ email: newEmail });
   };
 
   return (
@@ -32,6 +36,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdateProfile }) => {
             setShowPasswordModal(false);
             alert('Password changed successfully');
           }}
+        />
+      )}
+      {showEmailModal && (
+        <ChangeEmailModal
+          currentEmail={user.email}
+          onEmailChanged={handleEmailChanged}
+          onClose={() => setShowEmailModal(false)}
         />
       )}
 
@@ -137,27 +148,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdateProfile }) => {
               <div className="py-2 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-400">{user.phoneNumber || 'Not provided'}</div>
             )}
           </div>
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Sponsor Type</label>
-            {isEditing ? (
-              <select value={editedSponsorType} onChange={e => setEditedSponsorType(e.target.value as any)} className="w-full p-2 border border-black text-sm focus:outline-none focus:ring-2 focus:ring-black">
-                <option value="Self">Self</option>
-                <option value="Parent">Parent</option>
-                <option value="Scholarship">Scholarship</option>
-                <option value="Other">Other</option>
-              </select>
-            ) : (
-              <div className="py-2 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-400">{user.sponsorType || 'Not provided'}</div>
-            )}
-          </div>
-          <div className="md:col-span-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Address</label>
-            {isEditing ? (
-              <input type="text" value={editedAddress} onChange={e => setEditedAddress(e.target.value)} placeholder="Enter your address" className="w-full p-2 border border-black text-sm focus:outline-none focus:ring-2 focus:ring-black" />
-            ) : (
-              <div className="py-2 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-400">{editedAddress || 'Not provided'}</div>
-            )}
-          </div>
         </div>
       </div>
 
@@ -214,6 +204,46 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdateProfile }) => {
               >
                 Change Password
               </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Collapsible Security Settings (System Admin Only) */}
+      {user.role === UserRole.SYSTEM_ADMIN && (
+        <div className="bg-white border border-black rounded-lg px-6 py-4 mt-2">
+          <button
+            className="w-full text-left text-sm font-bold uppercase tracking-widest mb-2 focus:outline-none"
+            onClick={() => setShowSecurity(!showSecurity)}
+          >
+            Security Settings {showSecurity ? '▲' : '▼'}
+          </button>
+          {showSecurity && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 border border-gray-200 hover:border-black transition-colors rounded">
+                <div>
+                  <p className="font-bold text-sm">Email Address</p>
+                  <p className="text-xs text-gray-500">Current: {user.email}</p>
+                </div>
+                <button
+                  onClick={() => setShowEmailModal(true)}
+                  className="px-4 py-2 border border-black text-xs font-bold uppercase hover:bg-black hover:text-white transition-colors"
+                >
+                  Change Email
+                </button>
+              </div>
+              <div className="flex items-center justify-between p-3 border border-gray-200 hover:border-black transition-colors rounded">
+                <div>
+                  <p className="font-bold text-sm">Password</p>
+                  <p className="text-xs text-gray-500">Last changed: Never</p>
+                </div>
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className="px-4 py-2 border border-black text-xs font-bold uppercase hover:bg-black hover:text-white transition-colors"
+                >
+                  Change Password
+                </button>
+              </div>
             </div>
           )}
         </div>

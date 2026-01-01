@@ -48,6 +48,14 @@ const ProfileStep: React.FC<ProfileStepProps> = ({
     </div>
   );
 
+  const handleNext = () => {
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      alert('Phone number is required. Please enter your phone number before proceeding.');
+      return;
+    }
+    onNext();
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-start space-x-3">
@@ -66,12 +74,13 @@ const ProfileStep: React.FC<ProfileStepProps> = ({
           <ReadOnlyField label="Student ID" value={user.studentId || user.id} mono />
           <ReadOnlyField label="Email Address" value={user.email} />
           <Input
-            label="Phone Number"
+            label="Phone Number *"
             type="tel"
             value={phoneNumber}
             onChange={(e) => onPhoneNumberChange(e.target.value)}
             placeholder="+232 88 000 - 000"
             className="h-[58px]" // Match height of ReadOnlyField roughly
+            required
           />
         </div>
       </div>
@@ -133,7 +142,7 @@ const ProfileStep: React.FC<ProfileStepProps> = ({
       </div>
 
       <div className="flex justify-end pt-4">
-        <Button onClick={onNext} size="lg" className="w-full md:w-auto">
+        <Button onClick={handleNext} size="lg" className="w-full md:w-auto">
           Continue to Modules
         </Button>
       </div>

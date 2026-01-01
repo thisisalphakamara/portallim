@@ -116,42 +116,87 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
           </Badge>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Student Name
-            </label>
-            <p className="text-sm font-bold">{submission.studentName}</p>
+        <div className="space-y-6">
+          <h4 className="text-sm font-bold uppercase tracking-widest border-b border-gray-100 pb-2">Student Information</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Student Name
+              </label>
+              <p className="text-sm font-bold">{submission.studentName}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Student ID
+              </label>
+              <p className="text-sm font-mono">{submission.studentId}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Email Address
+              </label>
+              <p className="text-sm font-bold">{submission.studentEmail}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Phone Number
+              </label>
+              <p className="text-sm font-bold">{submission.phoneNumber || 'Not provided'}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                National ID
+              </label>
+              <p className="text-sm font-mono">{submission.nationalId || 'Not provided'}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Sponsor Type
+              </label>
+              <p className="text-sm font-bold">{submission.sponsorType || 'Not specified'}</p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Student ID
-            </label>
-            <p className="text-sm font-mono">{submission.studentId}</p>
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Faculty
-            </label>
-            <p className="text-sm font-bold">{submission.faculty}</p>
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Semester
-            </label>
-            <p className="text-sm">{submission.semester} - {submission.academicYear}</p>
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Submitted
-            </label>
-            <p className="text-sm">{formatDateTime(submission.submittedAt)}</p>
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Total Credits
-            </label>
-            <p className="text-sm font-bold">{totalCredits} Credits</p>
+        </div>
+
+        <div className="space-y-6">
+          <h4 className="text-sm font-bold uppercase tracking-widest border-b border-gray-100 pb-2">Academic Details</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Faculty
+              </label>
+              <p className="text-sm font-bold">{submission.faculty}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Program
+              </label>
+              <p className="text-sm font-bold">{submission.program}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Semester
+              </label>
+              <p className="text-sm">{submission.semester} - {submission.academicYear}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Enrollment Intake
+              </label>
+              <p className="text-sm font-bold">{submission.enrollmentIntake || 'Not specified'}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Submitted
+              </label>
+              <p className="text-sm">{formatDateTime(submission.submittedAt)}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Total Credits
+              </label>
+              <p className="text-sm font-bold">{totalCredits} Credits</p>
+            </div>
           </div>
         </div>
 

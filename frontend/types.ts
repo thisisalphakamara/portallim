@@ -56,12 +56,15 @@ export interface RegistrationSubmission {
   studentId: string;
   studentName: string;
   studentEmail: string;
+  phoneNumber: string;
+  nationalId?: string;
   faculty: string;
   program: string;
   semester: string;
   academicYear: string;
   enrollmentIntake: string;
   yearLevel: number;
+  sponsorType?: 'Self' | 'Parent' | 'Scholarship' | 'Other';
   modules: Module[] | string[];
   status: RegistrationStatus;
   submittedAt: string;

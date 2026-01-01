@@ -8,6 +8,7 @@ import ProfilePage from './components/ProfilePage';
 import SystemAdminDashboard from './components/SystemAdminDashboard';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import StudentAccountsList from './components/StudentAccountsList';
+import NotificationsPage from './components/NotificationsPage';
 import { User, UserRole, RegistrationSubmission, RegistrationStatus } from './types';
 import limlogo from './assets/limlogo.png';
 import { login as apiLogin, logout as apiLogout, getCurrentUserProfile, changePassword as apiChangePassword } from './services/auth.service';
@@ -377,6 +378,11 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     if (!user) return null;
+
+    // Notifications page for all users
+    if (activePage === 'notifications') {
+      return <NotificationsPage user={user} />;
+    }
 
     // Profile page for all users
     if (activePage === 'profile') {

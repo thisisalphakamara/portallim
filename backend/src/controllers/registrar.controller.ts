@@ -3,6 +3,7 @@ import { prisma } from '../index';
 import { supabase } from '../utils/supabase';
 import { Role } from '@prisma/client';
 import { AppError, asyncHandler } from '../middleware/error.middleware';
+import { emailService } from '../services/email.service';
 
 export const createStudentAccount = asyncHandler(async (req: any, res: Response) => {
     const {
@@ -51,11 +52,27 @@ export const createStudentAccount = asyncHandler(async (req: any, res: Response)
         include: { faculty: true, program: true }
     });
 
+    // 3. Send email with login credentials to student
+    try {
+        await emailService.sendStudentAccountCredentials(
+            email,
+            fullName,
+            studentId,
+            password,
+            newUser.faculty?.name || 'Unknown Faculty',
+            newUser.program?.name || 'Unknown Program'
+        );
+        console.log(`Student account credentials sent to: ${email}`);
+    } catch (emailError) {
+        console.error('Failed to send student credentials email:', emailError);
+        // Continue with response even if email fails
+    }
+
     res.status(201).json({
         success: true,
         user: newUser,
         temporaryPassword: password,
-        message: 'Student account created successfully.'
+        message: 'Student account created successfully. Login credentials have been sent to the student\'s email.'
     });
 });
 

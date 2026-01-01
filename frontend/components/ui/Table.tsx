@@ -48,11 +48,7 @@ function Table<T extends { id?: string | number }>({
         {data.map((row, rowIndex) => (
           <div 
             key={row.id || rowIndex}
-            onClick={() => onRowClick?.(row)}
-            className={`
-              bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-3 transition-all
-              ${onRowClick ? 'active:scale-[0.98] active:bg-gray-50 cursor-pointer' : ''}
-            `}
+            className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-3"
           >
             {columns.map((column, colIndex) => {
               // Special handling for the first column (usually ID or primary identifier) to be the header
@@ -92,8 +88,7 @@ function Table<T extends { id?: string | number }>({
             {data.map((row, rowIndex) => (
               <tr 
                 key={row.id || rowIndex}
-                onClick={() => onRowClick?.(row)}
-                className={`hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                className="hover:bg-gray-50 transition-colors"
               >
                 {columns.map((column, colIndex) => (
                   <td key={colIndex} className={`p-4 ${column.className || ''}`}>

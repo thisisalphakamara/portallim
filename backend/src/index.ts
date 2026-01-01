@@ -8,6 +8,8 @@ import adminRoutes from './routes/admin.routes';
 import registrarRoutes from './routes/registrar.routes';
 import registrationRoutes from './routes/registration.routes';
 import dataRoutes from './routes/data.routes';
+import emailRoutes from './routes/email.routes';
+import documentRoutes from './routes/document.routes';
 
 dotenv.config();
 
@@ -32,7 +34,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/registrar', registrarRoutes);
 app.use('/api/registrations', registrationRoutes);
+app.use('/api/registrations', documentRoutes);
 app.use('/api/data', dataRoutes);
+app.use('/api/email', emailRoutes);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' });

@@ -43,12 +43,13 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
           <SummaryItem label="Student Name" value={user.name} />
           <SummaryItem label="Student ID" value={user.studentId || user.id} />
           <SummaryItem label="Email Address" value={user.email} />
-          <SummaryItem label="Phone Number" value={phoneNumber || 'Not provided'} />
+          <SummaryItem label="Phone Number" value={phoneNumber} />
+          <SummaryItem label="National ID" value={user.nationalId || 'Not provided'} />
+          <SummaryItem label="Sponsor Type" value={sponsorType} />
           <SummaryItem label="Faculty" value={user.faculty || 'Not assigned'} />
           <SummaryItem label="Program" value={user.program || 'Not assigned'} />
           <SummaryItem label="Enrollment Intake" value={enrollmentMonthYear ? formatIntake(enrollmentMonthYear) : 'Not provided'} />
           <SummaryItem label="Semester / Year" value={`${semester} • ${academicYear}`} />
-          <SummaryItem label="Sponsor Type" value={sponsorType} />
         </div>
       </div>
 

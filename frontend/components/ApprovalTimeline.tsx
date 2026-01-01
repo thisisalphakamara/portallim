@@ -28,7 +28,15 @@ const ApprovalTimeline: React.FC<{ submission: RegistrationSubmission }> = ({ su
   }
 
   function getApprovalDate(role: string) {
-    const entry = submission.approvalHistory?.find(h => h.role.replace(/\s/g, '').toUpperCase().includes(role));
+    // Map step labels to backend role names
+    const roleMap: { [key: string]: string } = {
+      'YEARLEADER': 'YEAR_LEADER',
+      'FINANCE': 'FINANCE_OFFICER', 
+      'REGISTRAR': 'REGISTRAR'
+    };
+    
+    const backendRole = roleMap[role] || role;
+    const entry = submission.approvalHistory?.find(h => h.role === backendRole);
     return entry ? new Date(entry.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
   }
 

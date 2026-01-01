@@ -48,6 +48,7 @@ model User {
   lockedUntil      DateTime?
   submissions      Submission[]
   approvalLogs     ApprovalLog[]
+  documents        RegistrationDocument[]
 
   @@index([email])
 }
@@ -100,6 +101,7 @@ model Submission {
   submittedAt        DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   approvalLogs       ApprovalLog[]
+  documents          RegistrationDocument[]
 }
 
 model ApprovalLog {
@@ -111,4 +113,17 @@ model ApprovalLog {
   action       String      // "APPROVED", "REJECTED", "SUBMITTED"
   comments     String?
   createdAt    DateTime    @default(now())
+}
+
+model RegistrationDocument {
+  id           String      @id @default(uuid())
+  submissionId String
+  submission   Submission  @relation(fields: [submissionId], references: [id])
+  fileName     String
+  filePath     String
+  uploadedBy   String
+  uploadedAt   DateTime    @default(now())
+  user         User        @relation(fields: [uploadedBy], references: [id])
+  
+  @@index([submissionId])
 }
