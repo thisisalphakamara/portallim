@@ -1,69 +1,79 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { ApprovalStatus, Role } from '@prisma/client';
+import { AppError, asyncHandler } from '../middleware/error.middleware';
 
-export const submitRegistration = async (req: any, res: Response) => {
+export const submitRegistration = asyncHandler(async (req: any, res: Response) => {
     const { semester, academicYear, modules, enrollmentIntake, yearLevel } = req.body;
     const student = req.user;
 
     if (student.role !== Role.STUDENT) {
-        return res.status(403).json({ error: 'Only students can submit registrations' });
+        throw new AppError('Only students can submit registrations', 403);
     }
 
-    try {
-        // Check if faculty and program are assigned
-        if (!student.facultyId || !student.programId) {
-            return res.status(400).json({ error: 'Student must have a faculty and program assigned' });
-        }
-
-        const existingSubmission = await prisma.submission.findFirst({
-            where: {
-                studentId: student.id,
-                semester,
-                academicYear
-            }
-        });
-
-        if (existingSubmission) {
-            return res.status(409).json({
-                error: `Registration already submitted for ${semester} ${academicYear}.`
-            });
-        }
-
-        const submission = await prisma.submission.create({
-            data: {
-                studentId: student.id,
-                facultyId: student.facultyId,
-                programId: student.programId,
-                semester,
-                academicYear,
-                enrollmentIntake,
-                yearLevel,
-                modules,
-                status: ApprovalStatus.PENDING_YEAR_LEADER
-            }
-        });
-
-        // Log the submission
-        await prisma.approvalLog.create({
-            data: {
-                submissionId: submission.id,
-                userId: student.id,
-                action: 'SUBMITTED',
-                comments: 'Initial registration submission'
-            }
-        });
-
-        res.status(201).json({ success: true, submission });
-    } catch (error: any) {
-        if (error.code === 'P2002') {
-            return res.status(409).json({
-                error: `Registration already exists for ${semester} ${academicYear}.`
-            });
-        }
-        res.status(500).json({ error: error.message });
+    // Check if faculty and program are assigned
+    if (!student.facultyId || !student.programId) {
+        throw new AppError('Student must have a faculty and program assigned. Please contact the registrar.', 400);
     }
-};
+
+    // Validate modules array
+    if (!Array.isArray(modules) || modules.length === 0) {
+        throw new AppError('At least one module must be selected', 400);
+    }
+
+    if (modules.length > 10) {
+        throw new AppError('Cannot select more than 10 modules per semester', 400);
+    }
+
+    // Validate each module structure
+    for (const module of modules) {
+        if (!module.id || !module.name || !module.code) {
+            throw new AppError('Each module must have id, name, and code', 400);
+        }
+    }
+
+    const existingSubmission = await prisma.submission.findFirst({
+        where: {
+            studentId: student.id,
+            semester,
+            academicYear
+        }
+    });
+
+    if (existingSubmission) {
+        throw new AppError(`Registration already submitted for ${semester} ${academicYear}. You cannot submit multiple registrations for the same semester.`, 409);
+    }
+
+    const submission = await prisma.submission.create({
+        data: {
+            studentId: student.id,
+            facultyId: student.facultyId,
+            programId: student.programId,
+            semester,
+            academicYear,
+            enrollmentIntake,
+            yearLevel,
+            modules,
+            status: ApprovalStatus.PENDING_YEAR_LEADER
+        }
+    });
+
+    // Log the submission
+    await prisma.approvalLog.create({
+        data: {
+            submissionId: submission.id,
+            userId: student.id,
+            action: 'SUBMITTED',
+            comments: 'Initial registration submission'
+        }
+    });
+
+    res.status(201).json({ 
+        success: true, 
+        submission,
+        message: 'Registration submitted successfully. Your registration is now pending approval.'
+    });
+});
 
 export const getRegistrations = async (req: any, res: Response) => {
     const user = req.user;
@@ -170,35 +180,32 @@ export const approveRegistration = async (req: any, res: Response) => {
                 comments
             }
         });
+
         res.json({ success: true, submission: updated });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
 
-export const rejectRegistration = async (req: any, res: Response) => {
+export const rejectRegistration = asyncHandler(async (req: any, res: Response) => {
     const { id } = req.params;
     const { comments } = req.body;
     const user = req.user;
 
-    try {
-        const updated = await prisma.submission.update({
-            where: { id },
-            data: { status: ApprovalStatus.REJECTED },
-            include: { student: true }
-        });
+    const updated = await prisma.submission.update({
+        where: { id },
+        data: { status: ApprovalStatus.REJECTED },
+        include: { student: true }
+    });
 
-        await prisma.approvalLog.create({
-            data: {
-                submissionId: id,
-                userId: user.id,
-                action: 'REJECTED',
-                comments
-            }
-        });
+    await prisma.approvalLog.create({
+        data: {
+            submissionId: id,
+            userId: user.id,
+            action: 'REJECTED',
+            comments
+        }
+    });
 
-        res.json({ success: true, submission: updated });
-    } catch (error: any) {
-        res.status(500).json({ error: error.message });
-    }
-};
+    res.json({ success: true, submission: updated });
+});

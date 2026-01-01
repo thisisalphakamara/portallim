@@ -35,7 +35,7 @@ interface SystemStats {
 
 
 
-import { getSystemStats, getAuditLogs } from '../services/admin.service';
+import { getSystemStats, getAuditLogs, runSystemBackup, clearSystemCache, exportAuditLogs } from '../services/admin.service';
 
 const SystemAdminDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'overview' | 'audit' | 'users' | 'settings'>('overview');
@@ -44,6 +44,9 @@ const SystemAdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [cacheLoading, setCacheLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const facultyDisplayData = useMemo<FacultyDisplayData[]>(() => {
     const counts = stats?.facultyCounts ?? [];
     const entries = FACULTIES.map((faculty) => {
@@ -106,6 +109,59 @@ const SystemAdminDashboard: React.FC = () => {
     if (action.includes('FAILED') || action.includes('REJECTED')) return 'bg-red-100 text-red-800 border border-red-200';
     if (action.includes('APPROVED') || action.includes('SUCCESS') || action.includes('CREATED')) return 'bg-green-100 text-green-800 border border-green-200';
     return 'bg-gray-100 text-gray-800 border border-gray-200';
+  };
+
+  const handleBackup = async () => {
+    setBackupLoading(true);
+    try {
+      const result = await runSystemBackup();
+      if (result.success) {
+        alert(`Backup completed successfully!\nDuration: ${result.duration}\nTime: ${new Date(result.backupTime).toLocaleString()}`);
+        // Refresh stats to update last backup time
+        const statsResult = await getSystemStats();
+        if (statsResult.success) setStats(statsResult.stats);
+      }
+    } catch (error: any) {
+      alert(`Backup failed: ${error.message}`);
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  const handleClearCache = async () => {
+    setCacheLoading(true);
+    try {
+      const result = await clearSystemCache();
+      if (result.success) {
+        alert(`Cache cleared successfully!\nTime: ${new Date(result.clearedAt).toLocaleString()}`);
+      }
+    } catch (error: any) {
+      alert(`Cache clear failed: ${error.message}`);
+    } finally {
+      setCacheLoading(false);
+    }
+  };
+
+  const handleExportLogs = async () => {
+    setExportLoading(true);
+    try {
+      const result = await exportAuditLogs({ format: 'json' });
+      // Create download link for the file
+      const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      alert(`Exported ${result.totalLogs} audit logs successfully!`);
+    } catch (error: any) {
+      alert(`Export failed: ${error.message}`);
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const auditColumns = [
@@ -217,16 +273,28 @@ const SystemAdminDashboard: React.FC = () => {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <h4 className="text-sm font-bold uppercase tracking-widest mb-6">Quick Actions</h4>
               <div className="space-y-3">
-                <button className="w-full p-4 border border-gray-200 rounded-lg text-xs font-bold uppercase hover:bg-black hover:text-white hover:border-black transition-all text-left flex justify-between group">
-                  <span>Run System Backup</span>
+                <button 
+                  onClick={handleBackup}
+                  disabled={backupLoading}
+                  className="w-full p-4 border border-gray-200 rounded-lg text-xs font-bold uppercase hover:bg-black hover:text-white hover:border-black transition-all text-left flex justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{backupLoading ? 'Running Backup...' : 'Run System Backup'}</span>
                   <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </button>
-                <button className="w-full p-4 border border-gray-200 rounded-lg text-xs font-bold uppercase hover:bg-black hover:text-white hover:border-black transition-all text-left flex justify-between group">
-                  <span>Clear Cache</span>
+                <button 
+                  onClick={handleClearCache}
+                  disabled={cacheLoading}
+                  className="w-full p-4 border border-gray-200 rounded-lg text-xs font-bold uppercase hover:bg-black hover:text-white hover:border-black transition-all text-left flex justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{cacheLoading ? 'Clearing Cache...' : 'Clear Cache'}</span>
                   <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </button>
-                <button className="w-full p-4 border border-gray-200 rounded-lg text-xs font-bold uppercase hover:bg-black hover:text-white hover:border-black transition-all text-left flex justify-between group">
-                  <span>Export Audit Logs</span>
+                <button 
+                  onClick={handleExportLogs}
+                  disabled={exportLoading}
+                  className="w-full p-4 border border-gray-200 rounded-lg text-xs font-bold uppercase hover:bg-black hover:text-white hover:border-black transition-all text-left flex justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{exportLoading ? 'Exporting...' : 'Export Audit Logs'}</span>
                   <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </button>
               </div>

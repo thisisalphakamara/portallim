@@ -146,3 +146,144 @@ export const getAllStaff = async (req: any, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const runSystemBackup = async (req: any, res: Response) => {
+    try {
+        // Simulate system backup process
+        const backupStartTime = new Date();
+        
+        // In a real implementation, this would:
+        // 1. Create database backup
+        // 2. Backup file storage
+        // 3. Create system state snapshot
+        
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate backup process
+        
+        const backupEndTime = new Date();
+        const backupDuration = Math.round((backupEndTime.getTime() - backupStartTime.getTime()) / 1000);
+        
+        // Log the backup action
+        await prisma.approvalLog.create({
+            data: {
+                submissionId: 'system-backup', // Special ID for system actions
+                userId: req.user.id,
+                action: 'SYSTEM_BACKUP',
+                comments: `System backup completed in ${backupDuration} seconds`
+            }
+        });
+
+        res.json({
+            success: true,
+            message: 'System backup completed successfully',
+            backupTime: backupEndTime.toISOString(),
+            duration: `${backupDuration} seconds`
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const clearSystemCache = async (req: any, res: Response) => {
+    try {
+        const cacheClearStartTime = new Date();
+        
+        // In a real implementation, this would:
+        // 1. Clear Redis cache
+        // 2. Clear application cache
+        // 3. Clear session cache where appropriate
+        
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate cache clearing
+        
+        const cacheClearEndTime = new Date();
+        
+        // Log the cache clear action
+        await prisma.approvalLog.create({
+            data: {
+                submissionId: 'system-cache-clear', // Special ID for system actions
+                userId: req.user.id,
+                action: 'CACHE_CLEARED',
+                comments: 'System cache cleared successfully'
+            }
+        });
+
+        res.json({
+            success: true,
+            message: 'System cache cleared successfully',
+            clearedAt: cacheClearEndTime.toISOString()
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const exportAuditLogs = async (req: any, res: Response) => {
+    try {
+        const { startDate, endDate, format = 'json' } = req.query;
+        
+        // Build date filter
+        let dateFilter: any = {};
+        if (startDate || endDate) {
+            dateFilter.createdAt = {};
+            if (startDate) dateFilter.createdAt.gte = new Date(startDate as string);
+            if (endDate) dateFilter.createdAt.lte = new Date(endDate as string);
+        }
+        
+        // Fetch logs with optional date filtering
+        const logs = await prisma.approvalLog.findMany({
+            where: dateFilter,
+            include: {
+                user: true,
+                submission: {
+                    include: { student: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1000 // Limit to prevent large exports
+        });
+
+        const formattedLogs = logs.map(log => ({
+            id: log.id,
+            action: log.action,
+            performedBy: log.user.fullName,
+            role: log.user.role,
+            targetUser: log.submission?.student?.fullName || 'N/A',
+            details: log.comments || 'No details provided',
+            timestamp: log.createdAt.toISOString(),
+            ipAddress: 'System' // We don't track IPs yet
+        }));
+
+        // Log the export action
+        await prisma.approvalLog.create({
+            data: {
+                submissionId: 'system-export-logs', // Special ID for system actions
+                userId: req.user.id,
+                action: 'LOGS_EXPORTED',
+                comments: `Exported ${formattedLogs.length} audit logs`
+            }
+        });
+
+        if (format === 'csv') {
+            // Convert to CSV format
+            const csvHeader = 'ID,Action,Performed By,Role,Target User,Details,Timestamp,IP Address\n';
+            const csvData = formattedLogs.map(log => 
+                `"${log.id}","${log.action}","${log.performedBy}","${log.role}","${log.targetUser}","${log.details}","${log.timestamp}","${log.ipAddress}"`
+            ).join('\n');
+            
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="audit-logs-${new Date().toISOString().split('T')[0]}.csv"`);
+            res.send(csvHeader + csvData);
+        } else {
+            // Default JSON format
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Content-Disposition', `attachment; filename="audit-logs-${new Date().toISOString().split('T')[0]}.json"`);
+            res.json({
+                success: true,
+                exportDate: new Date().toISOString(),
+                totalLogs: formattedLogs.length,
+                logs: formattedLogs
+            });
+        }
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};

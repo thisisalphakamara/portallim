@@ -2,8 +2,9 @@ import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { supabase } from '../utils/supabase';
 import { Role } from '@prisma/client';
+import { AppError, asyncHandler } from '../middleware/error.middleware';
 
-export const createStudentAccount = async (req: any, res: Response) => {
+export const createStudentAccount = asyncHandler(async (req: any, res: Response) => {
     const {
         email,
         fullName,
@@ -17,66 +18,59 @@ export const createStudentAccount = async (req: any, res: Response) => {
     } = req.body;
 
     if (req.user.role !== Role.REGISTRAR && req.user.role !== Role.SYSTEM_ADMIN) {
-        return res.status(403).json({ error: 'Only Registrar can create student accounts' });
+        throw new AppError('Only Registrar can create student accounts', 403);
     }
 
-    try {
-        // 1. Create in Supabase
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // 1. Create in Supabase
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { fullName, role: Role.STUDENT }
+    });
+
+    if (authError) {
+        throw new AppError(authError.message, 400);
+    }
+
+    // 2. Create in Prisma
+    const newUser = await prisma.user.create({
+        data: {
             email,
-            password,
-            email_confirm: true,
-            user_metadata: { fullName, role: Role.STUDENT }
-        });
+            fullName,
+            role: Role.STUDENT,
+            supabaseId: authData.user.id,
+            studentId,
+            facultyId,
+            programId,
+            nationalId,
+            passportNumber,
+            currentYear: parseInt(currentYear) || 1,
+            isFirstLogin: true
+        },
+        include: { faculty: true, program: true }
+    });
 
-        if (authError) {
-            return res.status(400).json({ error: authError.message });
-        }
+    res.status(201).json({
+        success: true,
+        user: newUser,
+        temporaryPassword: password,
+        message: 'Student account created successfully.'
+    });
+});
 
-        // 2. Create in Prisma
-        const newUser = await prisma.user.create({
-            data: {
-                email,
-                fullName,
-                role: Role.STUDENT,
-                supabaseId: authData.user.id,
-                studentId,
-                facultyId,
-                programId,
-                nationalId,
-                passportNumber,
-                currentYear: parseInt(currentYear) || 1,
-                isFirstLogin: true
-            }
-        });
+export const getStudents = asyncHandler(async (req: any, res: Response) => {
+    const students = await prisma.user.findMany({
+        where: { role: Role.STUDENT },
+        include: { faculty: true, program: true }
+    });
 
-        res.status(201).json({
-            success: true,
-            user: newUser,
-            temporaryPassword: password
-        });
-    } catch (error: any) {
-        console.error('Create student error:', error);
-        res.status(500).json({ error: error.message });
-    }
-};
+    const flattenedStudents = students.map(s => ({
+        ...s,
+        name: s.fullName,
+        faculty: s.faculty?.name,
+        program: s.program?.name
+    }));
 
-export const getStudents = async (req: any, res: Response) => {
-    try {
-        const students = await prisma.user.findMany({
-            where: { role: Role.STUDENT },
-            include: { faculty: true, program: true }
-        });
-
-        const flattenedStudents = students.map(s => ({
-            ...s,
-            name: s.fullName,
-            faculty: s.faculty?.name,
-            program: s.program?.name
-        }));
-
-        res.json({ success: true, students: flattenedStudents });
-    } catch (error: any) {
-        res.status(500).json({ error: error.message });
-    }
-};
+    res.json({ success: true, students: flattenedStudents });
+});

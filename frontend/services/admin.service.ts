@@ -42,3 +42,17 @@ export const getAllStaff = async () => {
 export const getStudents = async () => {
     return api.get('/registrar/students');
 };
+
+// Quick Actions
+export const runSystemBackup = async () => {
+    return api.post('/admin/backup', {});
+};
+
+export const clearSystemCache = async () => {
+    return api.post('/admin/clear-cache', {});
+};
+
+export const exportAuditLogs = async (params?: { startDate?: string; endDate?: string; format?: 'json' | 'csv' }) => {
+    const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    return api.get(`/admin/export-logs${queryString}`);
+};
