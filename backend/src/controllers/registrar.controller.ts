@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { supabase } from '../utils/supabase';
-import { Role } from '@prisma/client';
+import { Role, NotificationType } from '@prisma/client';
 import { AppError, asyncHandler } from '../middleware/error.middleware';
 import { emailService } from '../services/email.service';
+import { notificationService } from '../services/notification.service';
 
 export const createStudentAccount = asyncHandler(async (req: any, res: Response) => {
     const {
@@ -36,15 +37,15 @@ export const createStudentAccount = asyncHandler(async (req: any, res: Response)
     // Check if user already exists in Supabase Auth
     console.log('Checking Supabase Auth for email:', email);
     const { data: existingSupabaseUsers, error: listError } = await supabase.auth.admin.listUsers();
-    
+
     if (listError) {
         console.log('ERROR: Could not fetch Supabase users:', listError);
         throw new AppError('Failed to check Supabase Auth', 500);
     }
-    
+
     const emailExistsInSupabase = existingSupabaseUsers.users.some(user => user.email === email);
     console.log('Supabase Auth result:', emailExistsInSupabase ? 'EMAIL FOUND' : 'EMAIL NOT FOUND');
-    
+
     // Only block creation if user exists in BOTH systems (complete user)
     // If user exists in only one system, it's a partial/incomplete registration that should be cleaned up
     if (existingUser && emailExistsInSupabase) {
@@ -98,7 +99,15 @@ export const createStudentAccount = asyncHandler(async (req: any, res: Response)
         include: { faculty: true, program: true }
     });
 
-    // 3. Send email with login credentials to student
+    // 3. Create Welcome Notification
+    await notificationService.createNotification(
+        newUser.id,
+        'Welcome to Limkokwing Portal',
+        `Welcome ${fullName}! Your student account has been created successfully. Please complete your registration submission.`,
+        NotificationType.INFO
+    );
+
+    // 4. Send email with login credentials to student
     try {
         await emailService.sendStudentAccountCredentials(
             email,
@@ -159,12 +168,12 @@ export const deleteStudentAccount = asyncHandler(async (req: any, res: Response)
     // Check if user exists in Supabase Auth
     console.log('Checking Supabase Auth for email:', email);
     const { data: existingSupabaseUsers, error: listError } = await supabase.auth.admin.listUsers();
-    
+
     if (listError) {
         console.log('ERROR: Could not fetch Supabase users:', listError);
         throw new AppError('Failed to check Supabase Auth', 500);
     }
-    
+
     const emailExistsInSupabase = existingSupabaseUsers.users.some(user => user.email === email);
     console.log('Supabase Auth result:', emailExistsInSupabase ? 'EMAIL FOUND' : 'EMAIL NOT FOUND');
 

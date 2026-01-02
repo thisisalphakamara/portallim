@@ -177,10 +177,11 @@ const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({ submission }) => {
 
                 {/* Step Details */}
                 <div className="space-y-1">
-                  <h4 className="font-semibold text-gray-900 text-sm">{stepInfo.title.split(' ')[0]}</h4>
+                  <h4 className="font-semibold text-gray-900 text-sm">{stepInfo.title}</h4>
                   
                   {approvalInfo && (
                     <div className="mt-1">
+                      <p className="text-xs font-medium text-gray-700">Mr {approvalInfo.approvedBy}</p>
                       <p className="text-xs text-gray-500">{formatDate(approvalInfo.date)}</p>
                     </div>
                   )}

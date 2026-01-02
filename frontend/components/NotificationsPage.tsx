@@ -8,22 +8,25 @@ interface NotificationsPageProps {
 }
 
 const NotificationsPage: React.FC<NotificationsPageProps> = ({ user }) => {
-  const { 
-    notifications, 
-    loading, 
-    error, 
+  const {
+    notifications,
+    loading,
+    error,
     unreadCount,
-    markAsRead, 
-    markAllAsRead, 
-    deleteNotification, 
-    clearAllNotifications 
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    clearAllNotifications
   } = useNotifications();
 
   const formatTimestamp = (timestamp: string) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+
     const now = new Date();
     const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (diffInDays === 0) {
       return date.toLocaleTimeString('en-GB', {
         hour: '2-digit',
@@ -96,13 +99,13 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ user }) => {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <button 
+          <button
             onClick={() => markAllAsRead()}
             className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Mark All as Read
           </button>
-          <button 
+          <button
             onClick={() => clearAllNotifications()}
             className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
@@ -158,14 +161,14 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ user }) => {
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
                       {!notification.read && (
-                        <button 
+                        <button
                           onClick={() => markAsRead(notification.id)}
                           className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                         >
                           Mark as read
                         </button>
                       )}
-                      <button 
+                      <button
                         onClick={() => deleteNotification(notification.id)}
                         className="text-xs text-gray-400 hover:text-gray-600"
                       >

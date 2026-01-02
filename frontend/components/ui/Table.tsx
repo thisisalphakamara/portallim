@@ -14,9 +14,9 @@ interface TableProps<T> {
   headerClassName?: string;
 }
 
-function Table<T extends { id?: string | number }>({ 
-  columns, 
-  data, 
+function Table<T extends { id?: string | number }>({
+  columns,
+  data,
   onRowClick,
   emptyMessage = 'No data available',
   headerClassName = 'bg-black text-white'
@@ -46,25 +46,26 @@ function Table<T extends { id?: string | number }>({
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {data.map((row, rowIndex) => (
-          <div 
+          <div
             key={row.id || rowIndex}
-            className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-3"
+            className={`bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-3 ${onRowClick ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}`}
+            onClick={() => onRowClick && onRowClick(row)}
           >
             {columns.map((column, colIndex) => {
               // Special handling for the first column (usually ID or primary identifier) to be the header
               if (colIndex === 0) {
                 return (
                   <div key={colIndex} className="pb-2 border-b border-gray-100 mb-2">
-                     <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-1">{column.header}</span>
-                     <div className="text-lg font-bold text-gray-900">{getCellValue(row, column)}</div>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-1">{column.header}</span>
+                    <div className="text-lg font-bold text-gray-900">{getCellValue(row, column)}</div>
                   </div>
                 );
               }
-              
+
               return (
                 <div key={colIndex} className="flex justify-between items-center py-1">
-                   <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{column.header}</span>
-                   <div className="text-sm font-medium text-right text-gray-900">{getCellValue(row, column)}</div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{column.header}</span>
+                  <div className="text-sm font-medium text-right text-gray-900">{getCellValue(row, column)}</div>
                 </div>
               );
             })}
@@ -86,9 +87,10 @@ function Table<T extends { id?: string | number }>({
           </thead>
           <tbody className="text-xs divide-y divide-gray-100">
             {data.map((row, rowIndex) => (
-              <tr 
+              <tr
                 key={row.id || rowIndex}
-                className="hover:bg-gray-50 transition-colors"
+                className={`hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                onClick={() => onRowClick && onRowClick(row)}
               >
                 {columns.map((column, colIndex) => (
                   <td key={colIndex} className={`p-4 ${column.className || ''}`}>

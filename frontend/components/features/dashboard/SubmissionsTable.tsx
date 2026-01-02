@@ -28,15 +28,15 @@ const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions, onRowC
   useEffect(() => {
     const checkDocuments = async () => {
       const approvedSubmissions = submissions.filter(s => s.status === RegistrationStatus.APPROVED);
-      
+
       for (const submission of approvedSubmissions) {
         setLoadingDocuments(prev => ({ ...prev, [submission.id]: true }));
-        
+
         try {
           const result = await getRegistrationDocuments(submission.id);
           const hasDocuments = result.success && result.documents && result.documents.length > 0;
           setDocumentsStatus(prev => ({ ...prev, [submission.id]: hasDocuments }));
-          
+
           // Store document information if available
           if (hasDocuments && result.documents.length > 0) {
             setDocumentsInfo(prev => ({ ...prev, [submission.id]: result.documents[0] }));
@@ -84,7 +84,7 @@ const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions, onRowC
 
     try {
       const result = await deleteRegistrationDocument(submission.id, documentInfo.id);
-      
+
       if (result.success) {
         setDocumentsStatus(prev => ({ ...prev, [submission.id]: false }));
         setDocumentsInfo(prev => ({ ...prev, [submission.id]: null }));
@@ -272,14 +272,8 @@ const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions, onRowC
           size="sm"
           className="underline hover:no-underline"
           onClick={(e) => {
-            e.preventDefault();
             e.stopPropagation();
             onRowClick(row);
-            return false;
-          }}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
           }}
         >
           View Details
@@ -294,10 +288,11 @@ const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions, onRowC
       <Table
         columns={columns}
         data={submissions}
+        onRowClick={onRowClick}
         emptyMessage="No registrations found"
         headerClassName="bg-gray-100"
       />
-      
+
       {console.log('Modal state:', { uploadModalOpen, selectedSubmission })}
       {selectedSubmission && (
         <DocumentUploadModal

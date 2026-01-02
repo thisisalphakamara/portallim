@@ -22,7 +22,10 @@ export const notificationService = {
       const response = await api.get('/notifications');
       return {
         success: true,
-        notifications: response.notifications || []
+        notifications: response.notifications.map((n: any) => ({
+          ...n,
+          timestamp: n.createdAt // Map backend 'createdAt' to frontend 'timestamp'
+        })) || []
       };
     } catch (error: any) {
       return {

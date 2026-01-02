@@ -1,123 +1,58 @@
 import { Request, Response } from 'express';
+import { notificationService } from '../services/notification.service';
+import { asyncHandler } from '../middleware/error.middleware';
 
-// Mock notifications data for now
-const mockNotifications = [
-  {
-    id: '1',
-    title: 'Welcome to LIM Portal',
-    message: 'Hello! Welcome to the Limkokwing University Portal!',
-    type: 'info',
-    timestamp: new Date().toISOString(),
-    read: false
-  },
-  {
-    id: '2',
-    title: 'System Update',
-    message: 'The notification system has been successfully implemented.',
-    type: 'success',
-    timestamp: new Date(Date.now() - 86400000).toISOString(),
-    read: false
-  }
-];
+export const getNotifications = asyncHandler(async (req: any, res: Response) => {
+  const userId = req.user.id;
+  const notifications = await notificationService.getUserNotifications(userId);
 
-export const getNotifications = async (req: Request, res: Response) => {
-  try {
-    // For now, return mock data
-    res.json({
-      success: true,
-      notifications: mockNotifications
-    });
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch notifications'
-    });
-  }
-};
+  res.json({
+    success: true,
+    notifications
+  });
+});
 
-export const markAsRead = async (req: Request, res: Response) => {
-  try {
-    const { notificationId } = req.params;
-    
-    // Find and mark as read in mock data
-    const notification = mockNotifications.find(n => n.id === notificationId);
-    if (notification) {
-      notification.read = true;
-    }
+export const markAsRead = asyncHandler(async (req: any, res: Response) => {
+  const { notificationId } = req.params;
+  const userId = req.user.id;
 
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to mark notification as read'
-    });
-  }
-};
+  await notificationService.markAsRead(notificationId, userId);
 
-export const markAllAsRead = async (req: Request, res: Response) => {
-  try {
-    // Mark all as read in mock data
-    mockNotifications.forEach(n => n.read = true);
+  res.json({ success: true });
+});
 
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error marking all notifications as read:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to mark all notifications as read'
-    });
-  }
-};
+export const markAllAsRead = asyncHandler(async (req: any, res: Response) => {
+  const userId = req.user.id;
 
-export const deleteNotification = async (req: Request, res: Response) => {
-  try {
-    const { notificationId } = req.params;
-    const index = mockNotifications.findIndex(n => n.id === notificationId);
-    
-    if (index > -1) {
-      mockNotifications.splice(index, 1);
-    }
+  await notificationService.markAllAsRead(userId);
 
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting notification:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to delete notification'
-    });
-  }
-};
+  res.json({ success: true });
+});
 
-export const clearAllNotifications = async (req: Request, res: Response) => {
-  try {
-    // Clear all mock notifications
-    mockNotifications.length = 0;
+export const deleteNotification = asyncHandler(async (req: any, res: Response) => {
+  const { notificationId } = req.params;
+  const userId = req.user.id;
 
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error clearing notifications:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to clear notifications'
-    });
-  }
-};
+  await notificationService.deleteNotification(notificationId, userId);
 
-export const getUnreadCount = async (req: Request, res: Response) => {
-  try {
-    const count = mockNotifications.filter(n => !n.read).length;
+  res.json({ success: true });
+});
 
-    res.json({
-      success: true,
-      count
-    });
-  } catch (error) {
-    console.error('Error getting unread count:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get unread count'
-    });
-  }
-};
+export const clearAllNotifications = asyncHandler(async (req: any, res: Response) => {
+  const userId = req.user.id;
+
+  await notificationService.clearAllNotifications(userId);
+
+  res.json({ success: true });
+});
+
+export const getUnreadCount = asyncHandler(async (req: any, res: Response) => {
+  const userId = req.user.id;
+
+  const count = await notificationService.getUnreadCount(userId);
+
+  res.json({
+    success: true,
+    count
+  });
+});

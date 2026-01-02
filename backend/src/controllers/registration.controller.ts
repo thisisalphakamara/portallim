@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
-import { ApprovalStatus, Role } from '@prisma/client';
+import { ApprovalStatus, Role, NotificationType } from '@prisma/client';
 import { AppError, asyncHandler } from '../middleware/error.middleware';
 import { emailService } from '../services/email.service';
+import { notificationService } from '../services/notification.service';
 
 export const submitRegistration = asyncHandler(async (req: any, res: Response) => {
     const { semester, academicYear, modules, enrollmentIntake, yearLevel, phoneNumber, nationalId, sponsorType } = req.body;
@@ -10,11 +11,6 @@ export const submitRegistration = asyncHandler(async (req: any, res: Response) =
 
     if (student.role !== Role.STUDENT) {
         throw new AppError('Only students can submit registrations', 403);
-    }
-
-    // Validate phone number is required
-    if (!phoneNumber || phoneNumber.trim() === '') {
-        throw new AppError('Phone number is required for registration', 400);
     }
 
     // Check if faculty and program are assigned
@@ -53,7 +49,7 @@ export const submitRegistration = asyncHandler(async (req: any, res: Response) =
     // Update user's profile details if provided
     await prisma.user.update({
         where: { id: student.id },
-        data: { 
+        data: {
             phoneNumber: phoneNumber.trim(),
             ...(nationalId && { nationalId }),
             ...(sponsorType && { sponsorType })
@@ -84,6 +80,14 @@ export const submitRegistration = asyncHandler(async (req: any, res: Response) =
         }
     });
 
+    // Create In-App Notification
+    await notificationService.createNotification(
+        student.id,
+        'Registration Submitted',
+        `Your registration for ${semester} ${academicYear} has been successfully submitted and is pending approval.`,
+        NotificationType.INFO
+    );
+
     // Send email notification to student
     try {
         await emailService.sendRegistrationSubmissionNotification(
@@ -99,8 +103,8 @@ export const submitRegistration = asyncHandler(async (req: any, res: Response) =
         // Continue with response even if email fails
     }
 
-    res.status(201).json({ 
-        success: true, 
+    res.status(201).json({
+        success: true,
         submission,
         message: 'Registration submitted successfully. Your registration is now pending approval.'
     });
@@ -217,15 +221,32 @@ export const approveRegistration = async (req: any, res: Response) => {
             }
         });
 
+        const currentStage = user.role === Role.YEAR_LEADER ? 'Year Leader' :
+            user.role === Role.FINANCE_OFFICER ? 'Finance Department' :
+                'Registrar';
+
+        // Create In-App Notification
+        if (nextStatus === ApprovalStatus.APPROVED) {
+            await notificationService.createNotification(
+                updated.student.id,
+                'Registration Fully Approved',
+                `Your registration for ${updated.semester} ${updated.academicYear} has been fully approved!`,
+                NotificationType.SUCCESS
+            );
+        } else {
+            await notificationService.createNotification(
+                updated.student.id,
+                'Registration Approved',
+                `Your registration has been approved by ${currentStage} and is moving to the next stage.`,
+                NotificationType.SUCCESS
+            );
+        }
+
         // Send email notification to student
         try {
-            const currentStage = user.role === Role.YEAR_LEADER ? 'Year Leader' : 
-                               user.role === Role.FINANCE_OFFICER ? 'Finance Department' : 
-                               'Registrar';
-            
             const nextStage = nextStatus === ApprovalStatus.PENDING_FINANCE ? 'Finance Department' :
-                            nextStatus === ApprovalStatus.PENDING_REGISTRAR ? 'Registrar' :
-                            nextStatus === ApprovalStatus.APPROVED ? null : null;
+                nextStatus === ApprovalStatus.PENDING_REGISTRAR ? 'Registrar' :
+                    nextStatus === ApprovalStatus.APPROVED ? null : null;
 
             if (nextStatus === ApprovalStatus.APPROVED) {
                 // Final approval
@@ -246,7 +267,7 @@ export const approveRegistration = async (req: any, res: Response) => {
                     approverRole: currentStage,
                     currentStage
                 };
-                
+
                 if (nextStage) {
                     await emailService.sendApprovalNotification(
                         approvalData.studentEmail,
@@ -297,12 +318,20 @@ export const rejectRegistration = asyncHandler(async (req: any, res: Response) =
         }
     });
 
+    const rejecterRole = user.role === Role.YEAR_LEADER ? 'Year Leader' :
+        user.role === Role.FINANCE_OFFICER ? 'Finance Department' :
+            'Registrar';
+
+    // Create In-App Notification
+    await notificationService.createNotification(
+        updated.student.id,
+        'Registration Rejected',
+        `Your registration was rejected by ${rejecterRole}. Reason: ${comments || 'No reason provided.'}`,
+        NotificationType.ERROR
+    );
+
     // Send email notification to student
     try {
-        const rejecterRole = user.role === Role.YEAR_LEADER ? 'Year Leader' : 
-                           user.role === Role.FINANCE_OFFICER ? 'Finance Department' : 
-                           'Registrar';
-
         await emailService.sendRejectionNotification(
             updated.student.email,
             updated.student.fullName,
@@ -317,3 +346,4 @@ export const rejectRegistration = asyncHandler(async (req: any, res: Response) =
 
     res.json({ success: true, submission: updated });
 });
+

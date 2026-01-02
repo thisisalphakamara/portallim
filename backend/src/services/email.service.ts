@@ -1,4 +1,5 @@
-import nodemailer from 'nodemailer';
+const nodemailer = require('nodemailer');
+import * as nodemailerTypes from 'nodemailer';
 import { AppError } from '../middleware/error.middleware';
 
 interface EmailConfig {
@@ -12,7 +13,7 @@ interface EmailConfig {
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter | null;
+  private transporter: nodemailerTypes.Transporter | null;
   private fromEmail: string;
 
   constructor() {
