@@ -1,63 +1,23 @@
 import React from 'react';
 import { User } from '../types';
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  timestamp: string;
-  read: boolean;
-}
+import { useNotifications } from '../hooks/useNotifications';
+import { Notification } from '../services/notification.service';
 
 interface NotificationsPageProps {
   user: User;
 }
 
 const NotificationsPage: React.FC<NotificationsPageProps> = ({ user }) => {
-  // Mock notifications data - in a real app, this would come from an API
-  const notifications: Notification[] = [
-    {
-      id: '1',
-      title: 'Registration Approved',
-      message: 'Your student registration has been approved by the registrar.',
-      type: 'success',
-      timestamp: '2024-01-15T10:30:00Z',
-      read: false
-    },
-    {
-      id: '2',
-      title: 'System Maintenance',
-      message: 'The portal will be undergoing maintenance on January 20, 2024 from 2:00 AM to 4:00 AM.',
-      type: 'warning',
-      timestamp: '2024-01-14T15:45:00Z',
-      read: false
-    },
-    {
-      id: '3',
-      title: 'New Feature Available',
-      message: 'You can now download your academic transcripts directly from the portal.',
-      type: 'info',
-      timestamp: '2024-01-13T09:15:00Z',
-      read: true
-    },
-    {
-      id: '4',
-      title: 'Password Changed',
-      message: 'Your account password was successfully changed.',
-      type: 'success',
-      timestamp: '2024-01-12T14:20:00Z',
-      read: true
-    },
-    {
-      id: '5',
-      title: 'Account Login Alert',
-      message: 'A new login to your account was detected from a new device.',
-      type: 'warning',
-      timestamp: '2024-01-10T18:30:00Z',
-      read: true
-    }
-  ];
+  const { 
+    notifications, 
+    loading, 
+    error, 
+    unreadCount,
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification, 
+    clearAllNotifications 
+  } = useNotifications();
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -126,8 +86,6 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ user }) => {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -138,16 +96,36 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ user }) => {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <button className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => markAllAsRead()}
+            className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
             Mark All as Read
           </button>
-          <button className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => clearAllNotifications()}
+            className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
             Clear All
           </button>
         </div>
       </div>
 
-      {notifications.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Loading Notifications</h3>
+          <p className="text-sm text-gray-500">Please wait while we fetch your notifications...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-white rounded-xl border border-red-200 shadow-sm p-12 text-center">
+          <svg className="w-16 h-16 text-red-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Error Loading Notifications</h3>
+          <p className="text-sm text-gray-500">{error}</p>
+        </div>
+      ) : notifications.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
           <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -180,11 +158,17 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ user }) => {
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
                       {!notification.read && (
-                        <button className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                        <button 
+                          onClick={() => markAsRead(notification.id)}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                        >
                           Mark as read
                         </button>
                       )}
-                      <button className="text-xs text-gray-400 hover:text-gray-600">
+                      <button 
+                        onClick={() => deleteNotification(notification.id)}
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                      >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>

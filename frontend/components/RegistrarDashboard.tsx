@@ -59,6 +59,7 @@ const RegistrarDashboard: React.FC<RegistrarDashboardProps> = ({
       {selectedSubmission && (
         <ApprovalModal
           submission={selectedSubmission}
+          userRole={user.role}
           onApprove={handleApproveWithComments}
           onReject={handleRejectWithReason}
           onClose={() => setSelectedSubmission(null)}
@@ -85,6 +86,7 @@ const RegistrarDashboard: React.FC<RegistrarDashboardProps> = ({
         <SubmissionsTable 
           submissions={displayedSubmissions} 
           onRowClick={setSelectedSubmission}
+          userRole={user.role}
         />
       </div>
     </div>

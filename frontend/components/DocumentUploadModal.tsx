@@ -8,6 +8,7 @@ interface DocumentUploadModalProps {
   submissionId: string;
   studentName: string;
   onUploadSuccess: () => void;
+  isReplacement?: boolean;
 }
 
 const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
@@ -15,7 +16,8 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   onClose,
   submissionId,
   studentName,
-  onUploadSuccess
+  onUploadSuccess,
+  isReplacement = false
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -51,6 +53,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         onUploadSuccess();
         onClose();
         setFile(null);
+        alert(isReplacement ? 'Document replaced successfully!' : 'Registration confirmation slip uploaded successfully!');
       } else {
         setError(response.error || 'Failed to upload document');
       }
@@ -67,7 +70,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Upload Registration Confirmation Slip"
+      title={isReplacement ? "Replace Registration Document" : "Upload Registration Confirmation Slip"}
       footer={
         <div className="flex space-x-4">
           <Button variant="outline" onClick={onClose} disabled={uploading}>
@@ -78,12 +81,21 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
             disabled={!file || uploading}
             className="bg-black text-white hover:bg-gray-800"
           >
-            {uploading ? 'Uploading...' : 'Upload Document'}
+            {uploading ? 'Uploading...' : (isReplacement ? 'Replace Document' : 'Upload Document')}
           </Button>
         </div>
       }
     >
       <div className="space-y-6">
+        {isReplacement && (
+          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl">
+            <h4 className="text-sm font-bold text-yellow-900 mb-2">⚠️ Document Replacement</h4>
+            <p className="text-sm text-yellow-800">
+              This will replace the existing document for this student. The previous document will be permanently removed.
+            </p>
+          </div>
+        )}
+
         <div className="bg-gray-50 p-4 rounded-xl">
           <h4 className="text-sm font-bold text-gray-900 mb-2">Student Information</h4>
           <p className="text-sm text-gray-600">

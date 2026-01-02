@@ -74,9 +74,10 @@ const App: React.FC = () => {
         if (studentResult.success) {
           const flattenedStudents = studentResult.students.map((s: any) => ({
             ...s,
-            name: s.fullName,
-            faculty: s.faculty?.name,
-            program: s.program?.name
+            name: s.fullName || s.name,
+            // Faculty and program are already flattened by backend, no need to access .name
+            faculty: s.faculty,
+            program: s.program
           }));
 
           if (user.role === UserRole.REGISTRAR) {

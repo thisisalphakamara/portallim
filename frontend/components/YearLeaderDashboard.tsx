@@ -64,6 +64,7 @@ const YearLeaderDashboard: React.FC<YearLeaderDashboardProps> = ({
       {selectedSubmission && (
         <ApprovalModal
           submission={selectedSubmission}
+          userRole={user.role}
           onApprove={handleApproveWithComments}
           onReject={handleRejectWithReason}
           onClose={() => setSelectedSubmission(null)}
@@ -90,6 +91,7 @@ const YearLeaderDashboard: React.FC<YearLeaderDashboardProps> = ({
         <SubmissionsTable 
           submissions={displayedSubmissions} 
           onRowClick={setSelectedSubmission}
+          userRole={user.role}
         />
       </div>
     </div>

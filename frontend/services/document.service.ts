@@ -21,6 +21,14 @@ export const downloadRegistrationDocument = async (submissionId: string, documen
     return response.blob();
 };
 
+export const sendDocumentToEmail = async (submissionId: string, documentId: string) => {
+    return api.post(`/registrations/${submissionId}/documents/${documentId}/email`, {});
+};
+
+export const deleteRegistrationDocument = async (submissionId: string, documentId: string) => {
+    return api.delete(`/registrations/${submissionId}/documents/${documentId}`);
+};
+
 export const uploadRegistrationDocument = async (submissionId: string, file: File) => {
     const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api';
     const token = localStorage.getItem('token');

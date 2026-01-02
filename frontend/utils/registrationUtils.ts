@@ -28,6 +28,21 @@ export const getYearForSemester = (semester: string): string => {
   return 'Year 1';
 };
 
+export const getCurrentSemester = (currentYear?: number): string => {
+  if (!currentYear) return 'Not specified';
+  
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1-12
+  
+  // Determine semester based on current month and student's year
+  // Assuming: Jan-Jun = Semester 1, Jul-Dec = Semester 2
+  if (month >= 1 && month <= 6) {
+    return `Semester ${(currentYear - 1) * 2 + 1}`;
+  } else {
+    return `Semester ${(currentYear - 1) * 2 + 2}`;
+  }
+};
+
 export const calculateTotalCredits = (modules: Array<{ credits: number }>): number => {
   return modules.reduce((sum, module) => sum + module.credits, 0);
 };

@@ -140,6 +140,7 @@ export const getRegistrations = async (req: any, res: Response) => {
             ...reg,
             studentName: reg.student.fullName,
             studentEmail: reg.student.email,
+            academicStudentId: reg.student.studentId, // Add the academic student ID as a separate field
             phoneNumber: reg.student.phoneNumber || '',
             nationalId: reg.student.nationalId,
             sponsorType: reg.student.sponsorType,

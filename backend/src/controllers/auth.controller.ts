@@ -9,7 +9,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     // 1. Check if user exists in our DB
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
         where: { email },
         include: { faculty: true, program: true }
     });
@@ -93,9 +93,9 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
             fullName: user.fullName,
             role: user.role,
             isFirstLogin: user.isFirstLogin,
-            faculty: user.faculty?.name,
+            faculty: user.faculty?.name || null,
             facultyId: user.facultyId,
-            program: user.program?.name,
+            program: user.program?.name || null,
             studentId: user.studentId,
             phoneNumber: user.phoneNumber,
             sponsorType: user.sponsorType
@@ -150,9 +150,9 @@ export const getMe = asyncHandler(async (req: any, res: Response) => {
             fullName: dbUser.fullName,
             role: dbUser.role,
             isFirstLogin: dbUser.isFirstLogin,
-            faculty: dbUser.faculty?.name,
+            faculty: dbUser.faculty?.name || null,
             facultyId: dbUser.facultyId,
-            program: dbUser.program?.name,
+            program: dbUser.program?.name || null,
             studentId: dbUser.studentId,
             phoneNumber: dbUser.phoneNumber,
             sponsorType: dbUser.sponsorType

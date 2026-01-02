@@ -426,6 +426,101 @@ class EmailService {
 </html>`;
   }
 
+  async sendDocumentWithAttachment(
+    to: string,
+    documentName: string,
+    filePath: string,
+    studentName?: string
+  ): Promise<boolean> {
+    if (!this.transporter) {
+      console.warn('Email service not configured. Skipping email send.');
+      return false;
+    }
+
+    try {
+      const isConnected = await this.verifyConnection();
+      if (!isConnected) {
+        throw new AppError('Email service connection failed', 500);
+      }
+
+      const subject = `Registration Confirmation Slip - ${documentName}`;
+      const html = this.generateDocumentEmailTemplate(studentName || 'Student', documentName);
+
+      const mailOptions = {
+        from: `"Limkokwing University" <${this.fromEmail}>`,
+        to,
+        subject,
+        html,
+        attachments: [
+          {
+            filename: documentName,
+            path: filePath
+          }
+        ]
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('Document email sent successfully:', info.messageId);
+      return true;
+    } catch (error) {
+      console.error('Failed to send document email:', error);
+      return false;
+    }
+  }
+
+  private generateDocumentEmailTemplate(studentName: string, documentName: string): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Registration Confirmation Slip</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #000; color: #fff; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #fff; border: 1px solid #ddd; }
+        .footer { background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; }
+        .document-info { background: #e8f5e8; padding: 15px; margin: 15px 0; border-left: 4px solid #4caf50; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Limkokwing University</h1>
+            <p>Online Registration System</p>
+        </div>
+        
+        <div class="content">
+            <h2>Registration Confirmation Slip</h2>
+            <p>Dear ${studentName},</p>
+            
+            <div class="document-info">
+                <h3>📄 Your Registration Document</h3>
+                <p>Please find your registration confirmation slip attached to this email.</p>
+                <p><strong>Document:</strong> ${documentName}</p>
+            </div>
+            
+            <h3>Important Information:</h3>
+            <ul>
+                <li>This document confirms your successful registration for the current semester</li>
+                <li>Please keep this document for your records</li>
+                <li>You may be required to present this document for various university services</li>
+                <li>If you have any questions, please contact the Registrar's Office</li>
+            </ul>
+            
+            <p>You can also download this document anytime from the student portal.</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message from Limkokwing University Online Registration System.</p>
+            <p>For inquiries, please contact the Registrar's Office.</p>
+        </div>
+    </div>
+</body>
+</html>`;
+  }
+
   private generateStudentCredentialsTemplate(
     studentName: string,
     studentEmail: string,

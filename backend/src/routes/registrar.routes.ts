@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createStudentAccount, getStudents } from '../controllers/registrar.controller';
+import { createStudentAccount, getStudents, deleteStudentAccount } from '../controllers/registrar.controller';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware';
 import { validate, commonValidations } from '../middleware/validation.middleware';
 import { Role } from '@prisma/client';
@@ -87,5 +87,7 @@ router.post('/create-student',
 );
 
 router.get('/students', authenticateToken, authorizeRoles(Role.REGISTRAR, Role.SYSTEM_ADMIN), getStudents);
+
+router.delete('/students/:email', authenticateToken, authorizeRoles(Role.REGISTRAR, Role.SYSTEM_ADMIN), deleteStudentAccount);
 
 export default router;

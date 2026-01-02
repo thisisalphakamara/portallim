@@ -8,6 +8,113 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id              String                 @id @default(uuid())
+  supabaseId      String?                @unique @map("supabase_id")
+  email           String
+  fullName        String
+  role            Role
+  studentId       String?                @unique
+  nationalId      String?                @unique
+  passportNumber  String?
+  isFirstLogin    Boolean                @default(true)
+  facultyId       String?
+  programId       String?
+  currentYear     Int?
+  phoneNumber     String?
+  sponsorType     String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  lockedUntil     DateTime?
+  loginAttempts   Int                    @default(0)
+  staffIdentifier String?                @unique @map("staff_identifier")
+  approvalLogs    ApprovalLog[]
+  documents       RegistrationDocument[]
+  submissions     Submission[]
+  notifications   Notification[]
+  faculty         Faculty?               @relation(fields: [facultyId], references: [id])
+  program         Program?               @relation(fields: [programId], references: [id])
+
+  @@unique([email, nationalId])
+  @@unique([email, passportNumber])
+  @@index([email])
+}
+
+model Faculty {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  modules     Module[]
+  programs    Program[]
+  submissions Submission[]
+  users       User[]
+}
+
+model Module {
+  id        String  @id @default(uuid())
+  name      String
+  code      String  @unique
+  credits   Int
+  facultyId String
+  semester  Int
+  yearLevel Int
+  faculty   Faculty @relation(fields: [facultyId], references: [id])
+
+  @@index([semester, yearLevel])
+}
+
+model Program {
+  id          String       @id @default(uuid())
+  name        String
+  facultyId   String
+  faculty     Faculty      @relation(fields: [facultyId], references: [id])
+  submissions Submission[]
+  users       User[]
+}
+
+model Submission {
+  id               String                 @id @default(uuid())
+  studentId        String
+  facultyId        String
+  programId        String
+  semester         String
+  academicYear     String
+  status           ApprovalStatus         @default(PENDING_YEAR_LEADER)
+  modules          Json
+  submittedAt      DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  enrollmentIntake String
+  yearLevel        Int?
+  approvalLogs     ApprovalLog[]
+  documents        RegistrationDocument[]
+  faculty          Faculty                @relation(fields: [facultyId], references: [id])
+  program          Program                @relation(fields: [programId], references: [id])
+  student          User                   @relation(fields: [studentId], references: [id])
+}
+
+model ApprovalLog {
+  id           String     @id @default(uuid())
+  submissionId String
+  userId       String
+  action       String
+  comments     String?
+  createdAt    DateTime   @default(now())
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+}
+
+model RegistrationDocument {
+  id           String     @id @default(uuid())
+  submissionId String
+  fileName     String
+  filePath     String
+  uploadedBy   String
+  uploadedAt   DateTime   @default(now())
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  user         User       @relation(fields: [uploadedBy], references: [id])
+
+  @@index([submissionId])
+}
+
 enum Role {
   STUDENT
   YEAR_LEADER
@@ -25,105 +132,23 @@ enum ApprovalStatus {
   REJECTED
 }
 
-model User {
-  id               String           @id @default(uuid())
-  supabaseId       String?          @unique @map("supabase_id")
-  email            String           @unique
-  fullName         String
-  role             Role
-  studentId        String?          @unique
-  nationalId       String?
-  passportNumber   String?
-  isFirstLogin     Boolean          @default(true)
-  facultyId        String?
-  faculty          Faculty?         @relation(fields: [facultyId], references: [id])
-  programId        String?
-  program          Program?         @relation(fields: [programId], references: [id])
-  currentYear      Int?
-  phoneNumber      String?
-  sponsorType      String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  loginAttempts    Int              @default(0)
-  lockedUntil      DateTime?
-  submissions      Submission[]
-  approvalLogs     ApprovalLog[]
-  documents        RegistrationDocument[]
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType  @default(INFO)
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now()) @map("created_at")
+  user      User             @relation(fields: [userId], references: [id])
 
-  @@index([email])
+  @@index([userId, read])
+  @@index([createdAt])
 }
 
-model Faculty {
-  id          String       @id @default(uuid())
-  name        String       @unique
-  users       User[]
-  programs    Program[]
-  submissions Submission[]
-  modules     Module[]
-}
-
-model Module {
-  id        String   @id @default(uuid())
-  name      String
-  code      String   @unique
-  credits   Int
-  semester  Int      // Semester number (1-8)
-  yearLevel Int      // Year level (1-4)
-  facultyId String
-  faculty   Faculty  @relation(fields: [facultyId], references: [id])
-  
-  @@index([semester, yearLevel])
-}
-
-model Program {
-  id          String       @id @default(uuid())
-  name        String
-  facultyId   String
-  faculty     Faculty      @relation(fields: [facultyId], references: [id])
-  users       User[]
-  submissions Submission[]
-}
-
-model Submission {
-  id                 String         @id @default(uuid())
-  studentId          String
-  student            User           @relation(fields: [studentId], references: [id])
-  facultyId          String
-  faculty            Faculty        @relation(fields: [facultyId], references: [id])
-  programId          String
-  program            Program        @relation(fields: [programId], references: [id])
-  semester           String
-  academicYear       String
-  enrollmentIntake   String
-  yearLevel          Int?
-  status             ApprovalStatus @default(PENDING_YEAR_LEADER)
-  modules            Json           // List of modules selected
-  submittedAt        DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  approvalLogs       ApprovalLog[]
-  documents          RegistrationDocument[]
-}
-
-model ApprovalLog {
-  id           String      @id @default(uuid())
-  submissionId String
-  submission   Submission  @relation(fields: [submissionId], references: [id])
-  userId       String
-  user         User        @relation(fields: [userId], references: [id])
-  action       String      // "APPROVED", "REJECTED", "SUBMITTED"
-  comments     String?
-  createdAt    DateTime    @default(now())
-}
-
-model RegistrationDocument {
-  id           String      @id @default(uuid())
-  submissionId String
-  submission   Submission  @relation(fields: [submissionId], references: [id])
-  fileName     String
-  filePath     String
-  uploadedBy   String
-  uploadedAt   DateTime    @default(now())
-  user         User        @relation(fields: [uploadedBy], references: [id])
-  
-  @@index([submissionId])
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
 }

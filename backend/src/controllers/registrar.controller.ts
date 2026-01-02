@@ -22,6 +22,52 @@ export const createStudentAccount = asyncHandler(async (req: any, res: Response)
         throw new AppError('Only Registrar can create student accounts', 403);
     }
 
+    console.log('=== STUDENT ACCOUNT CREATION DEBUG ===');
+    console.log('Request body:', { email, fullName, studentId, facultyId, programId, nationalId, passportNumber, currentYear });
+
+    // Check if user already exists in local database
+    console.log('Checking local database for email:', email);
+    const existingUser = await prisma.user.findFirst({
+        where: { email }
+    });
+
+    console.log('Local database result:', existingUser ? 'USER FOUND' : 'USER NOT FOUND');
+
+    // Check if user already exists in Supabase Auth
+    console.log('Checking Supabase Auth for email:', email);
+    const { data: existingSupabaseUsers, error: listError } = await supabase.auth.admin.listUsers();
+    
+    if (listError) {
+        console.log('ERROR: Could not fetch Supabase users:', listError);
+        throw new AppError('Failed to check Supabase Auth', 500);
+    }
+    
+    const emailExistsInSupabase = existingSupabaseUsers.users.some(user => user.email === email);
+    console.log('Supabase Auth result:', emailExistsInSupabase ? 'EMAIL FOUND' : 'EMAIL NOT FOUND');
+    
+    // Only block creation if user exists in BOTH systems (complete user)
+    // If user exists in only one system, it's a partial/incomplete registration that should be cleaned up
+    if (existingUser && emailExistsInSupabase) {
+        console.log('ERROR: Complete user exists in both systems');
+        throw new AppError('A user with this email address has already been registered', 400);
+    }
+
+    // If user exists partially, clean up the partial registration first
+    if (existingUser && !emailExistsInSupabase) {
+        console.log('Cleaning up partial registration: User exists in local DB but not in Supabase');
+        await prisma.user.delete({ where: { id: existingUser.id } });
+    }
+
+    if (!existingUser && emailExistsInSupabase) {
+        console.log('Cleaning up partial registration: User exists in Supabase but not in local DB');
+        const supabaseUser = existingSupabaseUsers.users.find(user => user.email === email);
+        if (supabaseUser) {
+            await supabase.auth.admin.deleteUser(supabaseUser.id);
+        }
+    }
+
+    console.log('All checks passed, proceeding with student creation...');
+
     // 1. Create in Supabase
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email,
@@ -90,4 +136,63 @@ export const getStudents = asyncHandler(async (req: any, res: Response) => {
     }));
 
     res.json({ success: true, students: flattenedStudents });
+});
+
+export const deleteStudentAccount = asyncHandler(async (req: any, res: Response) => {
+    const { email } = req.params;
+
+    if (req.user.role !== Role.REGISTRAR && req.user.role !== Role.SYSTEM_ADMIN) {
+        throw new AppError('Only Registrar or System Admin can delete student accounts', 403);
+    }
+
+    console.log('=== STUDENT ACCOUNT DELETION DEBUG ===');
+    console.log('Deleting student with email:', email);
+
+    // Check if user exists in local database
+    console.log('Checking local database for email:', email);
+    const existingUser = await prisma.user.findFirst({
+        where: { email }
+    });
+
+    console.log('Local database result:', existingUser ? 'USER FOUND' : 'USER NOT FOUND');
+
+    // Check if user exists in Supabase Auth
+    console.log('Checking Supabase Auth for email:', email);
+    const { data: existingSupabaseUsers, error: listError } = await supabase.auth.admin.listUsers();
+    
+    if (listError) {
+        console.log('ERROR: Could not fetch Supabase users:', listError);
+        throw new AppError('Failed to check Supabase Auth', 500);
+    }
+    
+    const emailExistsInSupabase = existingSupabaseUsers.users.some(user => user.email === email);
+    console.log('Supabase Auth result:', emailExistsInSupabase ? 'EMAIL FOUND' : 'EMAIL NOT FOUND');
+
+    if (!existingUser && !emailExistsInSupabase) {
+        throw new AppError('User not found', 404);
+    }
+
+    // Delete from local database if exists
+    if (existingUser) {
+        console.log('Deleting user from local database...');
+        await prisma.user.delete({ where: { id: existingUser.id } });
+        console.log('User deleted from local database');
+    }
+
+    // Delete from Supabase Auth if exists
+    if (emailExistsInSupabase) {
+        console.log('Deleting user from Supabase Auth...');
+        const supabaseUser = existingSupabaseUsers.users.find(user => user.email === email);
+        if (supabaseUser) {
+            await supabase.auth.admin.deleteUser(supabaseUser.id);
+            console.log('User deleted from Supabase Auth');
+        }
+    }
+
+    console.log('Student account deletion completed successfully');
+
+    res.json({
+        success: true,
+        message: 'Student account deleted successfully from all systems'
+    });
 });

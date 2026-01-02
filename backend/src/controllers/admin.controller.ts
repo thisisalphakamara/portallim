@@ -6,23 +6,78 @@ import { Role } from '@prisma/client';
 export const createStaffAccount = async (req: any, res: Response) => {
     const { email, fullName, role, facultyId, password, nationalId, passportNumber } = req.body;
 
+    console.log('=== STAFF ACCOUNT CREATION DEBUG ===');
+    console.log('Request body:', { email, fullName, role, facultyId, nationalId, passportNumber });
+
     // Verify requester is System Admin
     if (req.user.role !== Role.SYSTEM_ADMIN) {
+        console.log('ERROR: Not system admin');
         return res.status(403).json({ error: 'Only System Admin can create staff accounts' });
     }
 
     try {
+        // Check if user already exists in local database
+        console.log('Checking local database for email:', email);
+        const existingUser = await prisma.user.findFirst({
+            where: { email }
+        });
+
+        console.log('Local database result:', existingUser ? 'USER FOUND' : 'USER NOT FOUND');
+
+        // Check if user already exists in Supabase Auth
+        console.log('Checking Supabase Auth for email:', email);
+        const { data: existingSupabaseUsers, error: listError } = await supabase.auth.admin.listUsers();
+        
+        if (listError) {
+            console.log('ERROR: Could not fetch Supabase users:', listError);
+            return res.status(500).json({ error: 'Failed to check Supabase Auth' });
+        }
+        
+        const emailExistsInSupabase = existingSupabaseUsers.users.some(user => user.email === email);
+        console.log('Supabase Auth result:', emailExistsInSupabase ? 'EMAIL FOUND' : 'EMAIL NOT FOUND');
+        
+        // Only block creation if user exists in BOTH systems (complete user)
+        // If user exists in only one system, it's a partial/incomplete registration that should be cleaned up
+        if (existingUser && emailExistsInSupabase) {
+            console.log('ERROR: Complete user exists in both systems');
+            return res.status(400).json({ error: 'A user with this email address has already been registered' });
+        }
+
+        // If user exists partially, clean up the partial registration first
+        if (existingUser && !emailExistsInSupabase) {
+            console.log('Cleaning up partial registration: User exists in local DB but not in Supabase');
+            await prisma.user.delete({ where: { id: existingUser.id } });
+        }
+
+        if (!existingUser && emailExistsInSupabase) {
+            console.log('Cleaning up partial registration: User exists in Supabase but not in local DB');
+            const supabaseUser = existingSupabaseUsers.users.find(user => user.email === email);
+            if (supabaseUser) {
+                await supabase.auth.admin.deleteUser(supabaseUser.id);
+            }
+        }
+
+        console.log('All checks passed, proceeding with user creation...');
+
+        // Generate unique staff identifier
+        const staffIdentifier = `${role.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+        console.log('Generated staff identifier:', staffIdentifier);
+
         // 1. Create user in Supabase Auth
+        console.log('Creating user in Supabase Auth...');
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
             email,
             password,
             email_confirm: true,
-            user_metadata: { fullName, role }
+            user_metadata: { fullName, role, staffIdentifier }
         });
 
         if (authError) {
+            console.log('ERROR: Supabase Auth creation failed:', authError);
             return res.status(400).json({ error: authError.message });
         }
+
+        console.log('Supabase Auth user created successfully:', authData.user.id);
 
         // 2. Create user in Prisma DB
         const newUser = await prisma.user.create({
@@ -34,6 +89,7 @@ export const createStaffAccount = async (req: any, res: Response) => {
                 facultyId: facultyId || null,
                 nationalId,
                 passportNumber,
+                staffIdentifier,
                 isFirstLogin: false
             }
         });
@@ -45,6 +101,21 @@ export const createStaffAccount = async (req: any, res: Response) => {
         });
     } catch (error: any) {
         console.error('Create staff error:', error);
+        
+        // Handle unique constraint violations
+        if (error.code === 'P2002') {
+            const target = error.meta?.target;
+            if (target?.includes('nationalId')) {
+                return res.status(400).json({ error: 'A user with this national ID already exists' });
+            }
+            if (target?.includes('passportNumber')) {
+                return res.status(400).json({ error: 'A user with this passport number already exists' });
+            }
+            if (target?.includes('email')) {
+                return res.status(400).json({ error: 'A user with this email and identifier combination already exists' });
+            }
+        }
+        
         res.status(500).json({ error: error.message });
     }
 };

@@ -43,6 +43,10 @@ export const getStudents = async () => {
     return api.get('/registrar/students');
 };
 
+export const deleteStudentAccount = async (email: string) => {
+    return api.delete(`/registrar/students/${encodeURIComponent(email)}`);
+};
+
 // Quick Actions
 export const runSystemBackup = async () => {
     return api.post('/admin/backup', {});

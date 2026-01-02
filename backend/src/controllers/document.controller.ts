@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { AppError, asyncHandler } from '../middleware/error.middleware';
 import { Role } from '@prisma/client';
+import { emailService } from '../services/email.service';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -118,6 +119,8 @@ export const getDocuments = asyncHandler(async (req: any, res: Response) => {
   const hasAccess = 
     user.role === Role.REGISTRAR || 
     user.role === Role.SYSTEM_ADMIN ||
+    user.role === Role.YEAR_LEADER ||
+    user.role === Role.FINANCE_OFFICER ||
     (user.role === Role.STUDENT && user.id === submission.studentId);
 
   if (!hasAccess) {
@@ -166,6 +169,8 @@ export const downloadDocument = asyncHandler(async (req: any, res: Response) => 
   const hasAccess = 
     user.role === Role.REGISTRAR || 
     user.role === Role.SYSTEM_ADMIN ||
+    user.role === Role.YEAR_LEADER ||
+    user.role === Role.FINANCE_OFFICER ||
     (user.role === Role.STUDENT && user.id === document.submission.studentId);
 
   if (!hasAccess) {
@@ -184,6 +189,73 @@ export const downloadDocument = asyncHandler(async (req: any, res: Response) => 
   // Send file
   const fileStream = fs.createReadStream(document.filePath);
   fileStream.pipe(res);
+});
+
+export const sendDocumentToEmail = asyncHandler(async (req: any, res: Response) => {
+  const { submissionId, documentId } = req.params;
+  const user = req.user;
+
+  // Verify document exists and user has access
+  const document = await prisma.registrationDocument.findUnique({
+    where: { id: documentId },
+    include: {
+      submission: {
+        include: { student: true }
+      }
+    }
+  });
+
+  if (!document) {
+    throw new AppError('Document not found', 404);
+  }
+
+  // Verify this document belongs to the specified submission
+  if (document.submissionId !== submissionId) {
+    throw new AppError('Document does not belong to this submission', 400);
+  }
+
+  // Check access permissions
+  const hasAccess = 
+    user.role === Role.REGISTRAR || 
+    user.role === Role.SYSTEM_ADMIN ||
+    user.role === Role.YEAR_LEADER ||
+    user.role === Role.FINANCE_OFFICER ||
+    (user.role === Role.STUDENT && user.id === document.submission.studentId);
+
+  if (!hasAccess) {
+    throw new AppError('Access denied', 403);
+  }
+
+  // Check if file exists
+  if (!fs.existsSync(document.filePath)) {
+    throw new AppError('File not found on server', 404);
+  }
+
+  // Send email with document attachment
+  try {
+    const recipientEmail = user.role === Role.STUDENT ? user.email : document.submission.student.email;
+    const studentName = document.submission.student.fullName;
+    
+    // Send the document with attachment
+    const emailSent = await emailService.sendDocumentWithAttachment(
+      recipientEmail,
+      document.fileName,
+      document.filePath,
+      studentName
+    );
+
+    if (emailSent) {
+      res.json({
+        success: true,
+        message: `Document has been sent to ${recipientEmail}`
+      });
+    } else {
+      throw new AppError('Failed to send document via email. Please check email configuration.', 500);
+    }
+  } catch (error) {
+    console.error('Failed to send document via email:', error);
+    throw new AppError('Failed to send document via email', 500);
+  }
 });
 
 export const deleteDocument = asyncHandler(async (req: any, res: Response) => {

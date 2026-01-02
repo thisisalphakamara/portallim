@@ -192,19 +192,28 @@ async function main() {
         }
     }
 
-    await prisma.user.upsert({
-        where: { email: adminEmail },
-        update: {
-            supabaseId: supabaseUser?.id
-        },
-        create: {
-            email: adminEmail,
-            fullName: 'System Administrator',
-            role: Role.SYSTEM_ADMIN,
-            isFirstLogin: false,
-            supabaseId: supabaseUser?.id
-        }
+    const existingUser = await prisma.user.findFirst({
+        where: { email: adminEmail }
     });
+
+    if (existingUser) {
+        await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+                supabaseId: supabaseUser?.id
+            }
+        });
+    } else {
+        await prisma.user.create({
+            data: {
+                email: adminEmail,
+                fullName: 'System Administrator',
+                role: Role.SYSTEM_ADMIN,
+                isFirstLogin: false,
+                supabaseId: supabaseUser?.id
+            }
+        });
+    }
 
     console.log('Seeding completed.');
 }

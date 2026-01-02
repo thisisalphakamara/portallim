@@ -59,6 +59,7 @@ const FinanceOfficerDashboard: React.FC<FinanceOfficerDashboardProps> = ({
       {selectedSubmission && (
         <ApprovalModal
           submission={selectedSubmission}
+          userRole={user.role}
           onApprove={handleApproveWithComments}
           onReject={handleRejectWithReason}
           onClose={() => setSelectedSubmission(null)}
@@ -85,6 +86,7 @@ const FinanceOfficerDashboard: React.FC<FinanceOfficerDashboardProps> = ({
         <SubmissionsTable 
           submissions={displayedSubmissions} 
           onRowClick={setSelectedSubmission}
+          userRole={user.role}
         />
       </div>
     </div>

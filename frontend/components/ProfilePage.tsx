@@ -57,7 +57,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdateProfile }) => {
           <div className="inline-block px-2 py-1 border border-black text-[10px] font-bold uppercase mr-2">
             {user.role}
           </div>
-          {user.faculty && (
+          {user.faculty && user.role !== UserRole.REGISTRAR && user.role !== UserRole.FINANCE_OFFICER && (
             <span className="inline-block px-2 py-1 border border-black text-[10px] font-bold uppercase">
               {user.faculty}
             </span>
@@ -204,6 +204,43 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdateProfile }) => {
               >
                 Change Password
               </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Collapsible Security Settings (Staff Roles - Year Leader, Finance, Registrar) */}
+      {(user.role === UserRole.YEAR_LEADER || user.role === UserRole.FINANCE_OFFICER || user.role === UserRole.REGISTRAR) && (
+        <div className="bg-white border border-black rounded-lg px-6 py-4 mt-2">
+          <button
+            className="w-full text-left text-sm font-bold uppercase tracking-widest mb-2 focus:outline-none"
+            onClick={() => setShowSecurity(!showSecurity)}
+          >
+            Security Settings {showSecurity ? '▲' : '▼'}
+          </button>
+          {showSecurity && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 border border-gray-200 hover:border-black transition-colors rounded">
+                <div>
+                  <p className="font-bold text-sm">Email Address</p>
+                  <p className="text-xs text-gray-500">Official university email (cannot be changed)</p>
+                </div>
+                <div className="px-4 py-2 bg-gray-100 border border-gray-300 text-xs font-bold uppercase text-gray-500 rounded">
+                  {user.email}
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 border border-gray-200 hover:border-black transition-colors rounded">
+                <div>
+                  <p className="font-bold text-sm">Password</p>
+                  <p className="text-xs text-gray-500">Last changed: Never</p>
+                </div>
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className="px-4 py-2 border border-black text-xs font-bold uppercase hover:bg-black hover:text-white transition-colors"
+                >
+                  Change Password
+                </button>
+              </div>
             </div>
           )}
         </div>

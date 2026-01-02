@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RegistrationSubmission } from '../../../types';
-import { getRegistrationDocuments, downloadRegistrationDocument } from '../../../services/document.service';
+import { getRegistrationDocuments, downloadRegistrationDocument, sendDocumentToEmail } from '../../../services/document.service';
 
 interface RegistrationConfirmationProps {
   submission: RegistrationSubmission;
@@ -9,7 +9,7 @@ interface RegistrationConfirmationProps {
 interface RegistrationDocument {
   id: string;
   fileName: string;
-  documentUrl: string;
+  documentUrl?: string;
   uploadedAt: string;
   uploadedBy: string;
   status: 'PENDING' | 'AVAILABLE';
@@ -38,15 +38,15 @@ const RegistrationConfirmation: React.FC<RegistrationConfirmationProps> = ({ sub
     fetchDocuments();
   }, [submission.id]);
 
-  const handleDownload = async (document: RegistrationDocument) => {
-    if (document.status === 'AVAILABLE') {
+  const handleDownload = async (doc: RegistrationDocument) => {
+    if (doc.status === 'AVAILABLE') {
       try {
-        const response = await downloadRegistrationDocument(submission.id, document.id);
+        const blob = await downloadRegistrationDocument(submission.id, doc.id);
         // Create download link
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = document.fileName;
+        link.download = doc.fileName;
         document.body.appendChild(link);
         link.click();
         window.URL.revokeObjectURL(url);
@@ -60,11 +60,36 @@ const RegistrationConfirmation: React.FC<RegistrationConfirmationProps> = ({ sub
     }
   };
 
-  const handleView = (document: RegistrationDocument) => {
-    if (document.status === 'AVAILABLE') {
-      setSelectedDocument(document);
+  const handleView = async (doc: RegistrationDocument) => {
+    if (doc.status === 'AVAILABLE') {
+      try {
+        const blob = await downloadRegistrationDocument(submission.id, doc.id);
+        const url = window.URL.createObjectURL(blob);
+        setSelectedDocument({ ...doc, documentUrl: url });
+      } catch (error) {
+        console.error('Failed to view document:', error);
+        alert('Failed to load document for viewing. Please try again.');
+      }
     } else {
       alert('Document is not yet available for viewing.');
+    }
+  };
+
+  const handleSendToEmail = async (doc: RegistrationDocument) => {
+    if (doc.status === 'AVAILABLE') {
+      try {
+        const result = await sendDocumentToEmail(submission.id, doc.id);
+        if (result.success) {
+          alert(result.message || 'Document has been sent to your email!');
+        } else {
+          alert(result.error || 'Failed to send document to email.');
+        }
+      } catch (error: any) {
+        console.error('Failed to send document to email:', error);
+        alert(error.message || 'Failed to send document to email. Please try again.');
+      }
+    } else {
+      alert('Document is not yet available for email sending.');
     }
   };
 
@@ -81,16 +106,16 @@ const RegistrationConfirmation: React.FC<RegistrationConfirmationProps> = ({ sub
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-in fade-in duration-500">
-      <div className="bg-green-50 p-8 text-center border-b border-green-100">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-8 h-8 text-green-600">
+      <div className="bg-black p-8 text-center border-b border-gray-800">
+        <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-8 h-8 text-white">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
         </div>
-        <h3 className="text-xl font-black uppercase tracking-tight text-gray-900 mb-2">
+        <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2">
           Registration Fully Approved
         </h3>
-        <p className="text-sm text-gray-600 max-w-md mx-auto leading-relaxed">
+        <p className="text-sm text-gray-300 max-w-md mx-auto leading-relaxed">
           Your semester registration has been successfully approved. Your official registration slip will be available here once processed by the Registrar.
         </p>
       </div>
@@ -105,23 +130,59 @@ const RegistrationConfirmation: React.FC<RegistrationConfirmationProps> = ({ sub
               <p className="text-sm font-bold text-gray-900">{submission.studentName}</p>
             </div>
             <div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Student ID</p>
+              <p className="text-sm font-bold text-gray-900">{submission.academicStudentId || submission.studentId}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Email Address</p>
+              <p className="text-sm font-bold text-gray-900">{submission.studentEmail}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Phone Number</p>
+              <p className="text-sm font-bold text-gray-900">{submission.phoneNumber}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">National ID</p>
+              <p className="text-sm font-bold text-gray-900">{submission.nationalId || 'Not provided'}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Sponsor Type</p>
+              <p className="text-sm font-bold text-gray-900">{submission.sponsorType || 'Not provided'}</p>
+            </div>
+            <div>
               <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Faculty</p>
               <p className="text-sm font-bold text-gray-900">{submission.faculty}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Program</p>
+              <p className="text-sm font-bold text-gray-900">{submission.program}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Enrollment Intake</p>
+              <p className="text-sm font-bold text-gray-900">{submission.enrollmentIntake}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Year Level</p>
+              <p className="text-sm font-bold text-gray-900">Year {submission.yearLevel}</p>
             </div>
             <div>
               <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Semester</p>
               <p className="text-sm font-bold text-gray-900">{submission.semester}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Academic Year</p>
-              <p className="text-sm font-bold text-gray-900">{submission.academicYear}</p>
+              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Registration Status</p>
+              <p className="text-sm font-bold text-gray-900">{submission.status.replace('_', ' ')}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1">Submitted Date</p>
+              <p className="text-sm font-bold text-gray-900">{new Date(submission.submittedAt).toLocaleDateString()}</p>
             </div>
           </div>
         </div>
 
         {/* Documents Section */}
         <div>
-          <h4 className="text-sm font-black uppercase tracking-widest mb-4">Official Registration Documents</h4>
+          <h4 className="text-sm font-black uppercase tracking-widest mb-4">Registration Confirmation Slip</h4>
           
           {documents.length === 0 ? (
             <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
@@ -187,6 +248,17 @@ const RegistrationConfirmation: React.FC<RegistrationConfirmationProps> = ({ sub
                       >
                         Download
                       </button>
+                      <button
+                        onClick={() => handleSendToEmail(doc)}
+                        disabled={doc.status !== 'AVAILABLE'}
+                        className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest rounded transition-colors ${
+                          doc.status === 'AVAILABLE'
+                            ? 'border border-black hover:bg-black hover:text-white'
+                            : 'border border-gray-200 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        Send to Email
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -213,6 +285,52 @@ const RegistrationConfirmation: React.FC<RegistrationConfirmationProps> = ({ sub
           </div>
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      {selectedDocument && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">{selectedDocument.fileName}</h3>
+              <button
+                onClick={() => setSelectedDocument(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 p-4 overflow-auto">
+              <iframe
+                src={selectedDocument.documentUrl}
+                className="w-full h-full min-h-[600px] border border-gray-200 rounded"
+                title={selectedDocument.fileName}
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200">
+              <button
+                onClick={() => handleSendToEmail(selectedDocument)}
+                className="px-4 py-2 border border-black text-sm font-bold uppercase tracking-widest rounded hover:bg-black hover:text-white transition-colors"
+              >
+                Send to Email
+              </button>
+              <button
+                onClick={() => handleDownload(selectedDocument)}
+                className="px-4 py-2 bg-black text-white text-sm font-bold uppercase tracking-widest rounded hover:bg-gray-800 transition-colors"
+              >
+                Download
+              </button>
+              <button
+                onClick={() => setSelectedDocument(null)}
+                className="px-4 py-2 border border-black text-sm font-bold uppercase tracking-widest rounded hover:bg-black hover:text-white transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

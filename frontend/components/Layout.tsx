@@ -3,6 +3,7 @@ import React from 'react';
 import { User, UserRole } from '../types';
 import limlogo from '../assets/limlogo.png';
 import NotificationBell from './NotificationBell';
+import { useNotifications } from '../hooks/useNotifications';
 
 export type ActivePage = 'dashboard' | 'profile' | 'accounts' | 'approvals' | 'notifications';
 
@@ -17,6 +18,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [sidebarVisible, setSidebarVisible] = React.useState(true);
+  const { unreadCount } = useNotifications();
 
   const handleNavigate = (page: ActivePage) => {
     onNavigate(page);
@@ -99,7 +101,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
                 onClick={() => handleNavigate('approvals')}
                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
               />
-            ) : (user.role !== UserRole.STUDENT && user.role !== UserRole.SYSTEM_ADMIN) && (
+            ) : (user.role !== UserRole.STUDENT && user.role !== UserRole.SYSTEM_ADMIN && user.role !== UserRole.YEAR_LEADER && user.role !== UserRole.FINANCE_OFFICER) && (
               <NavItem
                 label="Approvals"
                 active={activePage === 'approvals'}
@@ -111,7 +113,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
               label="Notifications"
               active={activePage === 'notifications'}
               onClick={() => handleNavigate('notifications')}
-              badge={3}
+              badge={unreadCount}
               icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>}
             />
           </nav>
@@ -150,7 +152,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
               </div>
               <div className="flex items-center space-x-6">
                 <NotificationBell 
-                  count={3} 
+                  count={unreadCount} 
                   onClick={() => handleNavigate('notifications')} 
                 />
               </div>

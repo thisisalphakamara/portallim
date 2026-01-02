@@ -1,247 +1,189 @@
 import React, { useState } from 'react';
-import { RegistrationSubmission, Module } from '../types';
-import { Modal, Button, Textarea, Badge } from './ui';
-import { getStatusLabel, calculateTotalCredits, formatDateTime } from '../utils';
+import { RegistrationSubmission, UserRole } from '../types';
+import { Modal, Button, Textarea } from './ui';
+import { formatDate, formatIdDisplay } from '../utils';
 
 interface ApprovalModalProps {
   submission: RegistrationSubmission;
-  onApprove: (id: string, comments: string) => void;
-  onReject: (id: string, reason: string) => void;
+  userRole: UserRole;
+  onApprove: (comments: string) => void;
+  onReject: (reason: string) => void;
   onClose: () => void;
 }
 
-const ApprovalModal: React.FC<ApprovalModalProps> = ({ 
-  submission, 
-  onApprove, 
-  onReject, 
-  onClose 
+const ApprovalModal: React.FC<ApprovalModalProps> = ({
+  submission,
+  userRole,
+  onApprove,
+  onReject,
+  onClose
 }) => {
-  const [action, setAction] = useState<'approve' | 'reject' | null>(null);
   const [comments, setComments] = useState('');
-  const [rejectReason, setRejectReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    if (action === 'approve') {
-      onApprove(submission.id, comments);
-    } else if (action === 'reject') {
-      if (!rejectReason.trim()) {
-        alert('Please provide a reason for rejection');
-        return;
-      }
-      onReject(submission.id, rejectReason);
+  const handleApprove = async () => {
+    setIsSubmitting(true);
+    try {
+      await onApprove(comments);
+      onClose();
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
-  const totalCredits = calculateTotalCredits(submission.modules);
-
-  const renderFooter = () => {
-    if (!action) {
-      return (
-        <div className="flex space-x-4">
-          <Button 
-            variant="primary" 
-            fullWidth 
-            onClick={() => setAction('approve')}
-          >
-            ✓ Approve Registration
-          </Button>
-          <Button 
-            variant="outline" 
-            fullWidth 
-            onClick={() => setAction('reject')}
-          >
-            ✕ Reject Registration
-          </Button>
-        </div>
-      );
+  const handleReject = async () => {
+    if (!comments.trim()) {
+      alert('Please provide a reason for rejection');
+      return;
     }
-
-    if (action === 'approve') {
-      return (
-        <div className="space-y-4">
-          <Textarea
-            label="Comments (Optional)"
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
-            placeholder="Add any comments for this approval..."
-            rows={4}
-          />
-          <div className="flex space-x-4">
-            <Button variant="outline" onClick={() => setAction(null)}>
-              Back
-            </Button>
-            <Button variant="primary" fullWidth onClick={handleSubmit}>
-              Confirm Approval
-            </Button>
-          </div>
-        </div>
-      );
+    setIsSubmitting(true);
+    try {
+      await onReject(comments);
+      onClose();
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    return (
-      <div className="space-y-4">
-        <Textarea
-          label="Reason for Rejection *"
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-          placeholder="Please provide a reason for rejecting this registration..."
-          rows={4}
-          required
-        />
-        <div className="flex space-x-4">
-          <Button variant="outline" onClick={() => setAction(null)}>
-            Back
-          </Button>
-          <Button variant="danger" fullWidth onClick={handleSubmit}>
-            Confirm Rejection
-          </Button>
-        </div>
-      </div>
-    );
+  const getActionTitle = () => {
+    switch (userRole) {
+      case UserRole.YEAR_LEADER:
+        return 'Year Leader Review';
+      case UserRole.FINANCE_OFFICER:
+        return 'Finance Verification';
+      case UserRole.REGISTRAR:
+        return 'Final Approval';
+      default:
+        return 'Review Registration';
+    }
   };
 
   return (
-    <Modal
-      isOpen={true}
-      onClose={onClose}
-      title="Registration Review"
-      footer={renderFooter()}
-    >
-      <div className="space-y-6">
-        <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200">
-          <span className="text-xs font-bold uppercase">Current Status</span>
-          <Badge variant="default">
-            {getStatusLabel(submission.status)}
-          </Badge>
+    <Modal onClose={onClose}>
+      <div className="bg-white rounded-xl border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-2xl w-full mx-4">
+        <div className="p-6 border-b border-black">
+          <h2 className="text-xl font-bold uppercase tracking-widest">{getActionTitle()}</h2>
+          <p className="text-sm text-gray-600 mt-1">Registration ID: {formatIdDisplay(submission.id)}</p>
         </div>
 
-        <div className="space-y-6">
-          <h4 className="text-sm font-bold uppercase tracking-widest border-b border-gray-100 pb-2">Student Information</h4>
+        <div className="p-6 space-y-6">
+          {/* Student Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Student Name
-              </label>
-              <p className="text-sm font-bold">{submission.studentName}</p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Student ID
-              </label>
-              <p className="text-sm font-mono">{submission.studentId}</p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Email Address
-              </label>
-              <p className="text-sm font-bold">{submission.studentEmail}</p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Phone Number
-              </label>
-              <p className="text-sm font-bold">{submission.phoneNumber || 'Not provided'}</p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                National ID
-              </label>
-              <p className="text-sm font-mono">{submission.nationalId || 'Not provided'}</p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Sponsor Type
-              </label>
-              <p className="text-sm font-bold">{submission.sponsorType || 'Not specified'}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <h4 className="text-sm font-bold uppercase tracking-widest border-b border-gray-100 pb-2">Academic Details</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Faculty
-              </label>
-              <p className="text-sm font-bold">{submission.faculty}</p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Program
-              </label>
-              <p className="text-sm font-bold">{submission.program}</p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Semester
-              </label>
-              <p className="text-sm">{submission.semester} - {submission.academicYear}</p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Enrollment Intake
-              </label>
-              <p className="text-sm font-bold">{submission.enrollmentIntake || 'Not specified'}</p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Submitted
-              </label>
-              <p className="text-sm">{formatDateTime(submission.submittedAt)}</p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Total Credits
-              </label>
-              <p className="text-sm font-bold">{totalCredits} Credits</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-            Registered Modules ({submission.modules.length})
-          </label>
-          <div className="border border-black divide-y divide-gray-200">
-            {submission.modules.map((mod: Module) => (
-              <div key={mod.id} className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold">{mod.name}</p>
-                  <p className="text-xs text-gray-500">{mod.code}</p>
-                </div>
-                <p className="text-xs font-bold">{mod.credits} CR</p>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Student Details</h3>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">{submission.studentName}</p>
+                <p className="text-xs text-gray-600">{submission.studentEmail}</p>
+                <p className="text-xs text-gray-600">{submission.phoneNumber}</p>
               </div>
-            ))}
+            </div>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Academic Info</h3>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">{submission.program}</p>
+                <p className="text-xs text-gray-600">{submission.faculty}</p>
+                <p className="text-xs text-gray-600">{submission.semester} - {submission.academicYear}</p>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {submission.approvalHistory.length > 0 && (
-          <div className="space-y-3">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Approval History
-            </label>
-            <div className="space-y-2">
-              {submission.approvalHistory.map((history, index) => (
-                <div key={index} className="p-3 bg-gray-50 border border-gray-200 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold">{history.role}</p>
-                    <p className="text-[10px] text-gray-500">by {history.approvedBy}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-gray-500">
-                      {new Date(history.date).toLocaleDateString()}
+          {/* Modules */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Selected Modules</h3>
+            <div className="bg-gray-50 rounded-lg p-4">
+              {Array.isArray(submission.modules) && submission.modules.length > 0 ? (
+                <div className="space-y-2">
+                  {submission.modules.map((module: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span className="font-medium">{module.name || module}</span>
+                      <span className="text-xs text-gray-600">
+                        {module.code && `${module.code} • `}
+                        {module.credits && `${module.credits} credits`}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-xs font-bold">
+                      Total Credits: {submission.modules.reduce((sum: number, module: any) => sum + (module.credits || 0), 0)}
                     </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600">No modules selected</p>
+              )}
+            </div>
+          </div>
+
+          {/* Comments/Reason */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">
+              {userRole === UserRole.REGISTRAR ? 'Final Comments' : 'Review Comments'}
+            </h3>
+            <Textarea
+              value={comments}
+              onChange={setComments}
+              placeholder={
+                userRole === UserRole.REGISTRAR 
+                  ? "Add final approval comments (optional)..."
+                  : userRole === UserRole.FINANCE_OFFICER
+                  ? "Add finance verification notes..."
+                  : "Add academic review comments..."
+              }
+              rows={3}
+            />
+          </div>
+
+          {/* Approval History */}
+          {submission.approvalHistory && submission.approvalHistory.length > 0 && (
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Approval History</h3>
+              <div className="space-y-2">
+                {submission.approvalHistory.map((history, index) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-3 text-sm">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">{history.approvedBy}</p>
+                        <p className="text-xs text-gray-600">{history.role}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">{formatDate(history.date)}</p>
+                    </div>
                     {history.comments && (
-                      <p className="text-xs italic">"{history.comments}"</p>
+                      <p className="text-xs text-gray-600 mt-1">{history.comments}</p>
                     )}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-black bg-gray-50">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={handleApprove}
+              disabled={isSubmitting}
+              className="flex-1 bg-black text-white hover:bg-gray-800"
+            >
+              {isSubmitting ? 'Processing...' : 'Approve'}
+            </Button>
+            <Button
+              onClick={handleReject}
+              disabled={isSubmitting}
+              variant="outline"
+              className="flex-1 border-red-500 text-red-500 hover:bg-red-50"
+            >
+              {isSubmitting ? 'Processing...' : 'Reject'}
+            </Button>
+            <Button
+              onClick={onClose}
+              disabled={isSubmitting}
+              variant="outline"
+              className="flex-1"
+            >
+              Cancel
+            </Button>
           </div>
-        )}
+        </div>
       </div>
     </Modal>
   );

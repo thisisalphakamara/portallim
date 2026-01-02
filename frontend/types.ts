@@ -54,6 +54,7 @@ export interface Module {
 export interface RegistrationSubmission {
   id: string;
   studentId: string;
+  academicStudentId?: string;
   studentName: string;
   studentEmail: string;
   phoneNumber: string;
