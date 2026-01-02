@@ -89,7 +89,6 @@ export const createStaffAccount = async (req: any, res: Response) => {
                 facultyId: facultyId || null,
                 nationalId,
                 passportNumber,
-                staffIdentifier,
                 isFirstLogin: false
             }
         });
