@@ -339,7 +339,7 @@ const SystemAdminDashboard: React.FC = () => {
       {activeSection === 'overview' && (
         <div className="space-y-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            <div onClick={handleShowAllUsers} className="cursor-pointer">
+            <div>
               <StatCard
                 label="Total Users"
                 value={(stats ? stats.totalUsers.toString() : '0')}

@@ -234,7 +234,7 @@ export const getSystemStats = async (req: any, res: Response) => {
         const activeStudents = await prisma.user.count({ where: { role: Role.STUDENT } });
         const staffMembers = await prisma.user.count({
             where: {
-                role: { in: [Role.REGISTRAR, Role.FINANCE_OFFICER, Role.YEAR_LEADER, Role.SYSTEM_ADMIN] }
+                role: { in: [Role.REGISTRAR, Role.FINANCE_OFFICER, Role.YEAR_LEADER] }
             }
         });
         const pendingRegistrations = await prisma.submission.count({
@@ -315,16 +315,31 @@ export const getAuditLogs = async (req: any, res: Response) => {
         }
 
         // Format audit logs
-        const formattedAuditLogs = auditLogs.map(log => ({
-            id: log.id,
-            action: log.action,
-            performedBy: log.user.fullName,
-            role: log.user.role,
-            targetUser: log.target?.fullName || 'N/A',
-            details: log.details || 'No details provided',
-            timestamp: log.createdAt.toISOString(),
-            ipAddress: log.ipAddress || 'Unknown'
-        }));
+        const formattedAuditLogs = auditLogs.map(log => {
+            let targetUser = 'System';
+
+            if (log.target) {
+                // If target exists and is different from performer, show target name
+                targetUser = log.target.fullName;
+            } else if (log.targetUser === log.performedBy) {
+                // If target is the same as performer (self-action)
+                targetUser = 'Self';
+            } else if (log.targetUser && !log.target) {
+                // Target user was deleted but ID still exists
+                targetUser = 'Deleted User';
+            }
+
+            return {
+                id: log.id,
+                action: log.action,
+                performedBy: log.user.fullName,
+                role: log.user.role,
+                targetUser,
+                details: log.details || 'No details provided',
+                timestamp: log.createdAt.toISOString(),
+                ipAddress: log.ipAddress || 'Unknown'
+            };
+        });
 
         // Format approval logs
         const formattedApprovalLogs = approvalLogs.map(log => ({
@@ -540,18 +555,26 @@ export const deleteStaffAccount = async (req: any, res: Response) => {
         // Delete from local database
         console.log('Deleting user and related data from local database...');
 
-        // 1. Delete notifications
-        await prisma.notification.deleteMany({
+        // 1. Delete notifications for this user
+        const deletedNotifications = await prisma.notification.deleteMany({
             where: { userId: existingUser.id }
         });
+        console.log(`Deleted ${deletedNotifications.count} notifications`);
 
-        // 2. Delete approval logs for this user (they will be orphaned anyway)
-        await prisma.approvalLog.deleteMany({
+        // 2. Delete registration documents uploaded by this user
+        const deletedDocuments = await prisma.registrationDocument.deleteMany({
+            where: { uploadedBy: existingUser.id }
+        });
+        console.log(`Deleted ${deletedDocuments.count} registration documents`);
+
+        // 3. Delete approval logs for this user
+        const deletedApprovalLogs = await prisma.approvalLog.deleteMany({
             where: { userId: existingUser.id }
         });
+        console.log(`Deleted ${deletedApprovalLogs.count} approval logs`);
 
-        // 3. Clear audit log references (delete entries where this user is performer or target)
-        await prisma.auditLog.deleteMany({
+        // 4. Clear audit log references (delete entries where this user is performer or target)
+        const deletedAuditLogs = await prisma.auditLog.deleteMany({
             where: {
                 OR: [
                     { performedBy: existingUser.id },
@@ -559,8 +582,9 @@ export const deleteStaffAccount = async (req: any, res: Response) => {
                 ]
             }
         });
+        console.log(`Deleted ${deletedAuditLogs.count} audit logs`);
 
-        // 4. Create audit log for deletion before deleting the user
+        // 5. Create audit log for deletion before deleting the user
         await prisma.auditLog.create({
             data: {
                 action: 'ACCOUNT_DELETED',
@@ -571,7 +595,7 @@ export const deleteStaffAccount = async (req: any, res: Response) => {
             }
         });
 
-        // 5. Delete the user
+        // 6. Delete the user
         await prisma.user.delete({ where: { id: existingUser.id } });
 
         console.log('User and all related data deleted from local database');
