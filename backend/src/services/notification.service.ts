@@ -26,6 +26,40 @@ class NotificationService {
         }
     }
 
+    async broadcastToStaff(
+        title: string,
+        message: string,
+        type: NotificationType = NotificationType.INFO,
+        excludeUserId?: string
+    ) {
+        try {
+            const staffRoles = ['YEAR_LEADER', 'FINANCE_OFFICER', 'REGISTRAR', 'SYSTEM_ADMIN'];
+            const staffMembers = await prisma.user.findMany({
+                where: {
+                    role: { in: staffRoles as any },
+                    id: excludeUserId ? { not: excludeUserId } : undefined
+                },
+                select: { id: true }
+            });
+
+            const notifications = staffMembers.map(staff => ({
+                userId: staff.id,
+                title,
+                message,
+                type,
+                read: false
+            }));
+
+            if (notifications.length > 0) {
+                await prisma.notification.createMany({
+                    data: notifications
+                });
+            }
+        } catch (error) {
+            console.error('Error broadcasting notification to staff:', error);
+        }
+    }
+
     async getUserNotifications(userId: string) {
         return prisma.notification.findMany({
             where: { userId },

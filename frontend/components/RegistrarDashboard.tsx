@@ -49,11 +49,11 @@ const RegistrarDashboard: React.FC<RegistrarDashboardProps> = ({
   }), [myTasks, submissions]);
 
   const handleApproveWithComments = (id: string, comments: string) => {
-    onApprove(id);
+    onApprove(id, comments);
   };
 
   const handleRejectWithReason = (id: string, reason: string) => {
-    onReject(id);
+    onReject(id, reason);
   };
 
   return (

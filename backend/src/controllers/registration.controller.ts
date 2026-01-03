@@ -222,7 +222,7 @@ export const approveRegistration = async (req: any, res: Response) => {
             user.role === Role.FINANCE_OFFICER ? 'Finance Department' :
                 'Registrar';
 
-        // Create In-App Notification
+        // Create In-App Notification for Student
         if (nextStatus === ApprovalStatus.APPROVED) {
             await notificationService.createNotification(
                 updated.student.id,
@@ -238,6 +238,14 @@ export const approveRegistration = async (req: any, res: Response) => {
                 NotificationType.SUCCESS
             );
         }
+
+        // Broadcast notification to ALL staff
+        await notificationService.broadcastToStaff(
+            'Registration Review Update',
+            `${user.fullName} (${currentStage}) approved registration for ${updated.student.fullName}. ${comments ? `Comments: "${comments}"` : ''}`,
+            NotificationType.INFO,
+            user.id // Exclude the person who did the action
+        );
 
         // Send email notification to student (non-blocking)
         const nextStage = nextStatus === ApprovalStatus.PENDING_FINANCE ? 'Finance Department' :
@@ -304,12 +312,20 @@ export const rejectRegistration = asyncHandler(async (req: any, res: Response) =
         user.role === Role.FINANCE_OFFICER ? 'Finance Department' :
             'Registrar';
 
-    // Create In-App Notification
+    // Create In-App Notification for Student
     await notificationService.createNotification(
         updated.student.id,
         'Registration Rejected',
         `Your registration was rejected by ${rejecterRole}. Reason: ${comments || 'No reason provided.'}`,
         NotificationType.ERROR
+    );
+
+    // Broadcast notification to ALL staff
+    await notificationService.broadcastToStaff(
+        'Registration Rejected',
+        `${user.fullName} (${rejecterRole}) rejected registration for ${updated.student.fullName}. Reason: "${comments || 'No reason provided.'}"`,
+        NotificationType.ERROR,
+        user.id
     );
 
     // Send email notification to student (non-blocking)

@@ -211,11 +211,11 @@ const App: React.FC = () => {
     }
   };
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = async (id: string, comments?: string) => {
     if (!user) return;
 
     try {
-      const result = await approveRegistration(id, 'Approved by staff');
+      const result = await approveRegistration(id, comments || 'Approved by staff');
 
       if (result.success) {
         alert(`Registration approved!`);
@@ -230,11 +230,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleReject = async (id: string) => {
+  const handleReject = async (id: string, comments: string) => {
     if (!user) return;
 
-    const comments = prompt('Please enter reason for rejection:');
-    if (!comments) return;
+    if (!comments) {
+      alert('Please provide a reason for rejection');
+      return;
+    }
 
     try {
       const result = await rejectRegistration(id, comments);
