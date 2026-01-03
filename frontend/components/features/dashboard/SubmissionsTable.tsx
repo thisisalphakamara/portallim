@@ -14,9 +14,9 @@ interface SubmissionsTableProps {
 const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions, onRowClick, userRole }) => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<RegistrationSubmission | null>(null);
-  const [documentsStatus, setDocumentsStatus] = useState<{ [key: string]: boolean }>([]);
+  const [documentsStatus, setDocumentsStatus] = useState<{ [key: string]: boolean }>({});
   const [documentsInfo, setDocumentsInfo] = useState<{ [key: string]: any }>({});
-  const [loadingDocuments, setLoadingDocuments] = useState<{ [key: string]: boolean }>([]);
+  const [loadingDocuments, setLoadingDocuments] = useState<{ [key: string]: boolean }>({});
   const [deletingDocuments, setDeletingDocuments] = useState<{ [key: string]: boolean }>({});
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewDocumentUrl, setViewDocumentUrl] = useState<string | null>(null);

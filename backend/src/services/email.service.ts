@@ -1,5 +1,4 @@
-const nodemailer = require('nodemailer');
-import * as nodemailerTypes from 'nodemailer';
+import nodemailer from 'nodemailer';
 import { AppError } from '../middleware/error.middleware';
 
 interface EmailConfig {
@@ -13,25 +12,33 @@ interface EmailConfig {
 }
 
 class EmailService {
-  private transporter: nodemailerTypes.Transporter | null;
+  private transporter: nodemailer.Transporter | null;
   private fromEmail: string;
+  private config: EmailConfig;
 
   constructor() {
+    // Sanitize password (remove spaces often found in Google App Passwords UI)
+    const rawPass = process.env.EMAIL_APP_PASSWORD || '';
+    const sanitizedPass = rawPass.replace(/\s/g, '');
+
     this.config = {
       host: process.env.EMAIL_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.EMAIL_PORT || '587'),
-      secure: false, // true for 465, false for other ports
+      secure: false, // true for 465, false for 587
       auth: {
         user: process.env.EMAIL_USER || '',
-        pass: process.env.EMAIL_APP_PASSWORD || ''
+        pass: sanitizedPass
       }
     };
-    this.fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || '';
+
+    // Extract just the email address from EMAIL_FROM if it contains a name
+    const rawFrom = process.env.EMAIL_FROM || process.env.EMAIL_USER || '';
+    const emailMatch = rawFrom.match(/<(.+)>|(\S+@\S+)/);
+    this.fromEmail = emailMatch ? (emailMatch[1] || emailMatch[2]) : rawFrom;
+
     this.transporter = null;
     this.initializeTransporter();
   }
-
-  private config: EmailConfig;
 
   private initializeTransporter() {
     if (!this.config.auth.user || !this.config.auth.pass) {
@@ -39,7 +46,12 @@ class EmailService {
       return;
     }
 
-    this.transporter = nodemailer.createTransport(this.config);
+    this.transporter = nodemailer.createTransport({
+      ...this.config,
+      tls: {
+        rejectUnauthorized: false // Often needed for various SMTP servers
+      }
+    });
   }
 
   private async verifyConnection(): Promise<boolean> {
