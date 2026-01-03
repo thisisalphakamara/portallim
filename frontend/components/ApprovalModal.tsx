@@ -144,10 +144,9 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                     <span className="font-bold">{safeRender(submission.enrollmentIntake)}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Year/Class:</span>
+                    <span className="text-gray-500">Student Class:</span>
                     <span className="font-bold">
-                      {submission.yearLevel ? `Year ${submission.yearLevel}` : 'N/A'}
-                      {submission.studentClass ? ` (${submission.studentClass})` : ''}
+                      {safeRender(submission.studentClass)}
                     </span>
                   </div>
                 </div>
