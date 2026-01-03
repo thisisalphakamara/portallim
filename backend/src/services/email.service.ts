@@ -41,21 +41,34 @@ class EmailService {
   }
 
   private initializeTransporter() {
+    console.log('Initializing Email Service...');
+    console.log('Email User configured:', !!this.config.auth.user);
+    console.log('Email Password configured:', !!this.config.auth.pass);
+    console.log('Email Host:', this.config.host);
+
     if (!this.config.auth.user || !this.config.auth.pass) {
       console.warn('Email credentials not configured. Email service will be disabled.');
       return;
     }
 
-    this.transporter = nodemailer.createTransport({
-      ...this.config,
-      tls: {
-        rejectUnauthorized: false // Often needed for various SMTP servers
-      }
-    });
+    try {
+      this.transporter = nodemailer.createTransport({
+        ...this.config,
+        tls: {
+          rejectUnauthorized: false
+        }
+      });
+      console.log('Email transporter created successfully');
+    } catch (error) {
+      console.error('Failed to create email transporter:', error);
+    }
   }
 
   private async verifyConnection(): Promise<boolean> {
-    if (!this.transporter) return false;
+    if (!this.transporter) {
+      console.log('Cannot verify connection: Transporter is null');
+      return false;
+    }
 
     try {
       await this.transporter.verify();
@@ -67,6 +80,8 @@ class EmailService {
   }
 
   async sendEmail(to: string, subject: string, html: string, text?: string): Promise<boolean> {
+    console.log(`Attempting to send email to: ${to} with subject: ${subject}`);
+
     if (!this.transporter) {
       console.warn('Email service not configured. Skipping email send.');
       return false;

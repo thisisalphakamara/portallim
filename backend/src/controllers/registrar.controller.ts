@@ -92,15 +92,22 @@ export const createStudentAccount = asyncHandler(async (req: any, res: Response)
             }
         });
 
-        // 6. Send Credentials Email (BACKGROUND - NO AWAIT)
-        emailService.sendStudentAccountCredentials(
-            email,
-            fullName,
-            studentId,
-            password,
-            newUser.faculty?.name || 'Unknown Faculty',
-            newUser.program?.name || 'Unknown Program'
-        ).catch(err => console.error('Failed to send credentials email in background:', err));
+        // 6. Send Credentials Email
+        console.log(`Preparing to send credentials email to ${email} for student ID ${studentId}`);
+        try {
+            const emailSent = await emailService.sendStudentAccountCredentials(
+                email,
+                fullName,
+                studentId,
+                password,
+                newUser.faculty?.name || 'Unknown Faculty',
+                newUser.program?.name || 'Unknown Program'
+            );
+            console.log('Credentials email sending result:', emailSent ? 'SUCCESS' : 'FAILED');
+        } catch (emailErr) {
+            console.error('CRITICAL: Failed to send student credentials email:', emailErr);
+            // Don't fail the request, but log clearly
+        }
 
         res.status(201).json({
             success: true,
