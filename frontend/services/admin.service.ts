@@ -47,6 +47,10 @@ export const deleteStudentAccount = async (email: string) => {
     return api.delete(`/registrar/students/${encodeURIComponent(email)}`);
 };
 
+export const deleteStaffAccount = async (email: string) => {
+    return api.delete(`/admin/staff/${encodeURIComponent(email)}`);
+};
+
 // Quick Actions
 export const runSystemBackup = async () => {
     return api.post('/admin/backup', {});

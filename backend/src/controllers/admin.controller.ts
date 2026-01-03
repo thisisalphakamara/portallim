@@ -492,3 +492,109 @@ export const exportAuditLogs = async (req: any, res: Response) => {
     }
 };
 
+export const deleteStaffAccount = async (req: any, res: Response) => {
+    const { email } = req.params;
+
+    console.log('=== STAFF ACCOUNT DELETION DEBUG ===');
+    console.log('Deleting staff with email:', email);
+
+    // Verify requester is System Admin
+    if (req.user.role !== Role.SYSTEM_ADMIN) {
+        console.log('ERROR: Not system admin');
+        return res.status(403).json({ error: 'Only System Admin can delete staff accounts' });
+    }
+
+    try {
+        // Check if user exists in local database
+        console.log('Checking local database for email:', email);
+        const existingUser = await prisma.user.findFirst({
+            where: { email }
+        });
+
+        console.log('Local database result:', existingUser ? 'USER FOUND' : 'USER NOT FOUND');
+
+        if (!existingUser) {
+            return res.status(404).json({ error: 'Staff member not found' });
+        }
+
+        // Verify the user is actually a staff member (not a student or system admin)
+        const staffRoles: Role[] = [Role.REGISTRAR, Role.FINANCE_OFFICER, Role.YEAR_LEADER];
+        if (!staffRoles.includes(existingUser.role)) {
+            return res.status(400).json({
+                error: `Cannot delete this account. Only Registrar, Finance Officer, and Year Leader accounts can be deleted. This user is a ${existingUser.role}.`
+            });
+        }
+
+        // Check if user exists in Supabase Auth
+        console.log('Checking Supabase Auth for email:', email);
+        const { data: existingSupabaseUsers, error: listError } = await supabase.auth.admin.listUsers();
+
+        if (listError) {
+            console.log('ERROR: Could not fetch Supabase users:', listError);
+            return res.status(500).json({ error: 'Failed to check Supabase Auth' });
+        }
+
+        const emailExistsInSupabase = existingSupabaseUsers.users.some(user => user.email === email);
+        console.log('Supabase Auth result:', emailExistsInSupabase ? 'EMAIL FOUND' : 'EMAIL NOT FOUND');
+
+        // Delete from local database
+        console.log('Deleting user and related data from local database...');
+
+        // 1. Delete notifications
+        await prisma.notification.deleteMany({
+            where: { userId: existingUser.id }
+        });
+
+        // 2. Delete approval logs for this user (they will be orphaned anyway)
+        await prisma.approvalLog.deleteMany({
+            where: { userId: existingUser.id }
+        });
+
+        // 3. Clear audit log references (delete entries where this user is performer or target)
+        await prisma.auditLog.deleteMany({
+            where: {
+                OR: [
+                    { performedBy: existingUser.id },
+                    { targetUser: existingUser.id }
+                ]
+            }
+        });
+
+        // 4. Create audit log for deletion before deleting the user
+        await prisma.auditLog.create({
+            data: {
+                action: 'ACCOUNT_DELETED',
+                performedBy: req.user.id,
+                targetUser: null, // Will be null since we're about to delete
+                details: `Deleted ${existingUser.role} account for ${existingUser.fullName} (${email})`,
+                ipAddress: req.ip || 'Unknown'
+            }
+        });
+
+        // 5. Delete the user
+        await prisma.user.delete({ where: { id: existingUser.id } });
+
+        console.log('User and all related data deleted from local database');
+
+        // Delete from Supabase Auth if exists
+        if (emailExistsInSupabase) {
+            console.log('Deleting user from Supabase Auth...');
+            const supabaseUser = existingSupabaseUsers.users.find(user => user.email === email);
+            if (supabaseUser) {
+                await supabase.auth.admin.deleteUser(supabaseUser.id);
+                console.log('User deleted from Supabase Auth');
+            }
+        }
+
+        console.log('Staff account deletion completed successfully');
+
+        res.json({
+            success: true,
+            message: `Staff account for ${existingUser.fullName} deleted successfully`
+        });
+    } catch (error: any) {
+        console.error('Delete staff error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+

@@ -44,7 +44,7 @@ interface User {
   createdAt?: string;
 }
 
-import { getSystemStats, getAuditLogs, runSystemBackup, clearSystemCache, exportAuditLogs, getAllStaff, getStudents } from '../services/admin.service';
+import { getSystemStats, getAuditLogs, runSystemBackup, clearSystemCache, exportAuditLogs, getAllStaff, getStudents, deleteStaffAccount } from '../services/admin.service';
 
 const SystemAdminDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'overview' | 'audit' | 'users' | 'settings'>('overview');
@@ -61,6 +61,28 @@ const SystemAdminDashboard: React.FC = () => {
   const [modalTitle, setModalTitle] = useState('');
   const [modalData, setModalData] = useState<User[]>([]);
   const [modalLoading, setModalLoading] = useState(false);
+
+  const handleDeleteStaff = async (email: string, fullName: string) => {
+    if (!confirm(`Are you sure you want to delete the staff account for ${fullName}?\n\nThis action cannot be undone and will:\n- Remove the account from the system\n- Delete all associated data\n- Remove access to the portal\n\nEmail: ${email}`)) {
+      return;
+    }
+
+    try {
+      const result = await deleteStaffAccount(email);
+      if (result.success) {
+        alert(result.message || 'Staff account deleted successfully');
+        // Refresh the modal data
+        await handleShowStaff();
+        // Refresh stats
+        const statsResult = await getSystemStats();
+        if (statsResult.success) setStats(statsResult.stats);
+      } else {
+        alert(result.error || 'Failed to delete staff account');
+      }
+    } catch (error: any) {
+      alert(`Error: ${error.message || 'Failed to delete staff account'}`);
+    }
+  };
 
   const facultyDisplayData = useMemo<FacultyDisplayData[]>(() => {
     const counts = stats?.facultyCounts ?? [];
@@ -612,6 +634,9 @@ const SystemAdminDashboard: React.FC = () => {
                         {modalTitle === 'All Students' && (
                           <th className="px-4 py-3 text-left text-xs font-black uppercase">Student ID</th>
                         )}
+                        {modalTitle === 'All Staff Members' && (
+                          <th className="px-4 py-3 text-center text-xs font-black uppercase">Actions</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -633,6 +658,17 @@ const SystemAdminDashboard: React.FC = () => {
                           {modalTitle === 'All Students' && (
                             <td className="px-4 py-3 border-t border-black font-mono text-sm">{user.studentId || '-'}</td>
                           )}
+                          {modalTitle === 'All Staff Members' && (
+                            <td className="px-4 py-3 border-t border-black text-center">
+                              <button
+                                onClick={() => handleDeleteStaff(user.email, user.fullName)}
+                                className="px-3 py-1 bg-red-600 text-white text-xs font-bold uppercase rounded hover:bg-red-700 transition-colors"
+                                title="Delete staff account"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -648,8 +684,9 @@ const SystemAdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
 
