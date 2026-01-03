@@ -41,7 +41,6 @@ describe('Auth Controller', () => {
     beforeEach(() => {
         mockRequest = {
             body: {},
-            user: undefined,
             ip: '127.0.0.1',
         };
         mockResponse = {
@@ -84,7 +83,7 @@ describe('Auth Controller', () => {
             (jwt.sign as jest.Mock).mockReturnValue('jwt-token');
             (prisma.user.update as jest.Mock).mockResolvedValue(mockUser);
 
-            await login(mockRequest as Request, mockResponse as Response);
+            await login(mockRequest as Request, mockResponse as Response, mockNext);
 
             expect(mockResponse.json).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -108,7 +107,7 @@ describe('Auth Controller', () => {
             (prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
 
             try {
-                await login(mockRequest as Request, mockResponse as Response);
+                await login(mockRequest as Request, mockResponse as Response, mockNext);
             } catch (error: any) {
                 expect(error.message).toContain('Invalid email or password');
                 expect(error.statusCode).toBe(401);
@@ -144,7 +143,7 @@ describe('Auth Controller', () => {
             });
 
             try {
-                await login(mockRequest as Request, mockResponse as Response);
+                await login(mockRequest as Request, mockResponse as Response, mockNext);
             } catch (error: any) {
                 expect(error.statusCode).toBe(401);
                 expect(prisma.user.update).toHaveBeenCalledWith(
@@ -179,7 +178,7 @@ describe('Auth Controller', () => {
             (prisma.user.findFirst as jest.Mock).mockResolvedValue(mockUser);
 
             try {
-                await login(mockRequest as Request, mockResponse as Response);
+                await login(mockRequest as Request, mockResponse as Response, mockNext);
             } catch (error: any) {
                 expect(error.message).toContain('Account locked');
                 expect(error.statusCode).toBe(403);
@@ -204,7 +203,7 @@ describe('Auth Controller', () => {
             });
             (prisma.user.update as jest.Mock).mockResolvedValue(mockUser);
 
-            await changePassword(mockRequest as any, mockResponse as Response);
+            await changePassword(mockRequest as any, mockResponse as Response, mockNext);
 
             expect(mockResponse.json).toHaveBeenCalledWith({
                 success: true,
@@ -219,7 +218,7 @@ describe('Auth Controller', () => {
             (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
             try {
-                await changePassword(mockRequest as any, mockResponse as Response);
+                await changePassword(mockRequest as any, mockResponse as Response, mockNext);
             } catch (error: any) {
                 expect(error.message).toBe('User not found');
                 expect(error.statusCode).toBe(404);
@@ -255,7 +254,7 @@ describe('Auth Controller', () => {
             });
             (prisma.auditLog.create as jest.Mock).mockResolvedValue({});
 
-            await changeEmail(mockRequest as any, mockResponse as Response);
+            await changeEmail(mockRequest as any, mockResponse as Response, mockNext);
 
             expect(mockResponse.json).toHaveBeenCalledWith({
                 success: true,
@@ -280,7 +279,7 @@ describe('Auth Controller', () => {
             (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
 
             try {
-                await changeEmail(mockRequest as any, mockResponse as Response);
+                await changeEmail(mockRequest as any, mockResponse as Response, mockNext);
             } catch (error: any) {
                 expect(error.message).toBe('New email must be different from current email');
                 expect(error.statusCode).toBe(400);
@@ -312,7 +311,7 @@ describe('Auth Controller', () => {
             (prisma.user.findFirst as jest.Mock).mockResolvedValue(existingUser);
 
             try {
-                await changeEmail(mockRequest as any, mockResponse as Response);
+                await changeEmail(mockRequest as any, mockResponse as Response, mockNext);
             } catch (error: any) {
                 expect(error.message).toBe('Email address already in use');
                 expect(error.statusCode).toBe(400);
@@ -339,7 +338,7 @@ describe('Auth Controller', () => {
             (mockRequest as any).user = { id: 'user-123' };
             (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
 
-            await getMe(mockRequest as any, mockResponse as Response);
+            await getMe(mockRequest as any, mockResponse as Response, mockNext);
 
             expect(mockResponse.json).toHaveBeenCalledWith({
                 success: true,
@@ -357,7 +356,7 @@ describe('Auth Controller', () => {
             (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
             try {
-                await getMe(mockRequest as any, mockResponse as Response);
+                await getMe(mockRequest as any, mockResponse as Response, mockNext);
             } catch (error: any) {
                 expect(error.message).toBe('User not found');
                 expect(error.statusCode).toBe(404);

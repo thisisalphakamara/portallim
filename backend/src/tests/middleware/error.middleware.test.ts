@@ -41,7 +41,7 @@ describe('Error Middleware', () => {
     describe('asyncHandler', () => {
         it('should call next with error if async function throws', async () => {
             const error = new Error('Async error');
-            const asyncFn = asyncHandler(async (req, res, next) => {
+            const asyncFn = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
                 throw error;
             });
 
@@ -55,7 +55,7 @@ describe('Error Middleware', () => {
         });
 
         it('should execute async function successfully', async () => {
-            const asyncFn = asyncHandler(async (req, res, next) => {
+            const asyncFn = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
                 res.json({ success: true });
             });
 
