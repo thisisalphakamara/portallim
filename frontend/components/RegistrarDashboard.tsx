@@ -9,8 +9,8 @@ import RegistrationSlipsSection from './RegistrationSlipsSection';
 interface RegistrarDashboardProps {
   user: User;
   submissions: RegistrationSubmission[];
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
+  onApprove: (id: string, comments?: string) => void;
+  onReject: (id: string, reason: string) => void;
 }
 
 const RegistrarDashboard: React.FC<RegistrarDashboardProps> = ({

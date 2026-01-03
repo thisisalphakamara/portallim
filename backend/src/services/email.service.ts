@@ -473,6 +473,91 @@ class EmailService {
     }
   }
 
+  async sendRegistrationSlipNotification(
+    studentEmail: string,
+    studentName: string,
+    semester: string,
+    academicYear: string
+  ): Promise<boolean> {
+    const subject = 'Registration Slip Available - Limkokwing University';
+    const html = this.generateRegistrationSlipNotificationTemplate(
+      studentName,
+      semester,
+      academicYear
+    );
+
+    return this.sendEmail(studentEmail, subject, html);
+  }
+
+  private generateRegistrationSlipNotificationTemplate(
+    studentName: string,
+    semester: string,
+    academicYear: string
+  ): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Registration Slip Available</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #000; color: #fff; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #fff; border: 1px solid #ddd; }
+        .footer { background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; }
+        .slip-info { background: #e8f5e8; padding: 15px; margin: 15px 0; border-left: 4px solid #4caf50; }
+        .login-btn { display: inline-block; background: #000; color: #fff; padding: 12px 24px; text-decoration: none; margin: 15px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Limkokwing University</h1>
+            <p>Online Registration System</p>
+        </div>
+        
+        <div class="content">
+            <h2>📄 Your Registration Slip is Ready!</h2>
+            <p>Dear ${studentName},</p>
+            
+            <div class="slip-info">
+                <h3>✓ Registration Slip Available</h3>
+                <p>Your registration confirmation slip for <strong>${semester} ${academicYear}</strong> has been generated and is now available for download.</p>
+            </div>
+            
+            <h3>How to Access Your Slip:</h3>
+            <ol>
+                <li>Log into the student portal</li>
+                <li>Navigate to your dashboard</li>
+                <li>Click on "Download Registration Slip"</li>
+                <li>Save the PDF for your records</li>
+            </ol>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="#" class="login-btn">Access Student Portal</a>
+            </div>
+            
+            <h3>Important Information:</h3>
+            <ul>
+                <li>This slip confirms your successful registration for the semester</li>
+                <li>Keep this document for your records</li>
+                <li>You may need to present this for university services</li>
+                <li>The slip is also available in your student dashboard anytime</li>
+            </ul>
+            
+            <p>Congratulations on completing your registration!</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message from Limkokwing University Online Registration System.</p>
+            <p>For inquiries, please contact the Registrar's Office.</p>
+        </div>
+    </div>
+</body>
+</html>`;
+  }
+
   private generateDocumentEmailTemplate(studentName: string, documentName: string): string {
     return `
 <!DOCTYPE html>

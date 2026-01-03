@@ -6,8 +6,8 @@ import { formatDate, formatIdDisplay } from '../utils';
 interface ApprovalModalProps {
   submission: RegistrationSubmission;
   userRole: UserRole;
-  onApprove: (comments: string) => void;
-  onReject: (reason: string) => void;
+  onApprove: (id: string, comments: string) => void;
+  onReject: (id: string, reason: string) => void;
   onClose: () => void;
 }
 
@@ -24,7 +24,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   const handleApprove = async () => {
     setIsSubmitting(true);
     try {
-      await onApprove(comments);
+      await onApprove(submission.id, comments);
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -38,7 +38,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
     }
     setIsSubmitting(true);
     try {
-      await onReject(comments);
+      await onReject(submission.id, comments);
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -205,7 +205,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
               </h3>
               <Textarea
                 value={comments}
-                onChange={setComments}
+                onChange={(e) => setComments(e.target.value)}
                 placeholder={
                   userRole === UserRole.REGISTRAR
                     ? "Add final approval comments (optional)..."

@@ -7,8 +7,8 @@ import { useSearch, useFilter } from '../hooks';
 interface YearLeaderDashboardProps {
   user: User;
   submissions: RegistrationSubmission[];
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
+  onApprove: (id: string, comments?: string) => void;
+  onReject: (id: string, reason: string) => void;
 }
 
 const YearLeaderDashboard: React.FC<YearLeaderDashboardProps> = ({

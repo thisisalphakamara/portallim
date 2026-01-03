@@ -86,7 +86,14 @@ export const uploadDocument = asyncHandler(async (req: any, res: Response) => {
     }
   });
 
-  // Send notification to student (optional)
+  // Send email notification to student
+  emailService.sendRegistrationSlipNotification(
+    submission.student.email,
+    submission.student.fullName,
+    submission.semester,
+    submission.academicYear
+  ).catch(err => console.error('Failed to send slip notification email:', err));
+
   console.log(`Document uploaded for student ${submission.student.fullName}`);
 
   res.status(201).json({

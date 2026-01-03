@@ -7,8 +7,8 @@ import RegistrarDashboard from './RegistrarDashboard';
 interface StaffDashboardProps {
   user: User;
   submissions: RegistrationSubmission[];
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
+  onApprove: (id: string, comments?: string) => void;
+  onReject: (id: string, reason: string) => void;
 }
 
 const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, submissions, onApprove, onReject }) => {
