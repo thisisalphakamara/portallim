@@ -9,13 +9,14 @@ export const getStatusLabel = (status: RegistrationStatus): string => {
     [RegistrationStatus.APPROVED]: 'Approved',
     [RegistrationStatus.REJECTED]: 'Rejected'
   };
-  
+
   return labels[status] || status;
 };
 
 export const getStatusBadgeVariant = (status: RegistrationStatus): 'default' | 'success' | 'warning' | 'danger' => {
   if (status === RegistrationStatus.APPROVED) return 'success';
   if (status === RegistrationStatus.REJECTED) return 'danger';
+  if (status.includes('PENDING')) return 'warning';
   return 'default';
 };
 
@@ -30,10 +31,10 @@ export const getYearForSemester = (semester: string): string => {
 
 export const getCurrentSemester = (currentYear?: number): string => {
   if (!currentYear) return 'Not specified';
-  
+
   const now = new Date();
   const month = now.getMonth() + 1; // 1-12
-  
+
   // Determine semester based on current month and student's year
   // Assuming: Jan-Jun = Semester 1, Jul-Dec = Semester 2
   if (month >= 1 && month <= 6) {

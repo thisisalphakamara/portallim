@@ -3,7 +3,7 @@ import React from 'react';
 import { User, UserRole } from '../types';
 import limlogo from '../assets/limlogo.png';
 import NotificationBell from './NotificationBell';
-import { useNotifications } from '../hooks/useNotifications';
+import { useNotificationContext } from '../contexts/NotificationContext';
 
 export type ActivePage = 'dashboard' | 'profile' | 'accounts' | 'approvals' | 'notifications';
 
@@ -18,7 +18,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [sidebarVisible, setSidebarVisible] = React.useState(true);
-  const { unreadCount } = useNotifications();
+  const { unreadCount } = useNotificationContext();
 
   const handleNavigate = (page: ActivePage) => {
     onNavigate(page);
@@ -151,9 +151,9 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
                 </h2>
               </div>
               <div className="flex items-center space-x-6">
-                <NotificationBell 
-                  count={unreadCount} 
-                  onClick={() => handleNavigate('notifications')} 
+                <NotificationBell
+                  count={unreadCount}
+                  onClick={() => handleNavigate('notifications')}
                 />
               </div>
             </header>

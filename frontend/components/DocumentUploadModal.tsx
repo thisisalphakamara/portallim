@@ -7,7 +7,7 @@ interface DocumentUploadModalProps {
   onClose: () => void;
   submissionId: string;
   studentName: string;
-  onUploadSuccess: () => void;
+  onUploadSuccess: (document?: any) => void;
   isReplacement?: boolean;
 }
 
@@ -48,9 +48,9 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
     try {
       const response = await uploadRegistrationDocument(submissionId, file);
-      
+
       if (response.success) {
-        onUploadSuccess();
+        onUploadSuccess(response.document);
         onClose();
         setFile(null);
         alert(isReplacement ? 'Document replaced successfully!' : 'Registration confirmation slip uploaded successfully!');

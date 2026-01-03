@@ -107,7 +107,18 @@ export const createStudentAccount = asyncHandler(async (req: any, res: Response)
         NotificationType.INFO
     );
 
-    // 4. Send email with login credentials to student
+    // 4. Log the account creation in audit log
+    await prisma.auditLog.create({
+        data: {
+            action: 'ACCOUNT_CREATED',
+            performedBy: req.user.id,
+            targetUser: newUser.id,
+            details: `Created STUDENT account for ${fullName} (${email}, Student ID: ${studentId})`,
+            ipAddress: req.ip || 'Unknown'
+        }
+    });
+
+    // 5. Send email with login credentials to student
     try {
         await emailService.sendStudentAccountCredentials(
             email,
@@ -134,15 +145,32 @@ export const createStudentAccount = asyncHandler(async (req: any, res: Response)
 export const getStudents = asyncHandler(async (req: any, res: Response) => {
     const students = await prisma.user.findMany({
         where: { role: Role.STUDENT },
-        include: { faculty: true, program: true }
+        include: {
+            faculty: true,
+            program: true,
+            submissions: {
+                orderBy: { submittedAt: 'desc' },
+                take: 1
+            }
+        }
     });
 
-    const flattenedStudents = students.map(s => ({
-        ...s,
-        name: s.fullName,
-        faculty: s.faculty?.name,
-        program: s.program?.name
-    }));
+    const flattenedStudents = students.map(s => {
+        const latestSubmission = s.submissions[0];
+        let registrationStatus = 'NOT_STARTED';
+
+        if (latestSubmission) {
+            registrationStatus = latestSubmission.status;
+        }
+
+        return {
+            ...s,
+            name: s.fullName,
+            faculty: s.faculty?.name,
+            program: s.program?.name,
+            registrationStatus
+        };
+    });
 
     res.json({ success: true, students: flattenedStudents });
 });

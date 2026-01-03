@@ -34,6 +34,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
   const [enrollmentMonthYear, setEnrollmentMonthYear] = useState(
     user.enrollmentIntake || new Date().toISOString().slice(0, 7)
   );
+  const [studentClass, setStudentClass] = useState('');
 
   useEffect(() => {
     if (user.enrollmentIntake) {
@@ -64,8 +65,8 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
         if (result.success && result.modules) {
           setAvailableModules(result.modules);
           // Clear selected modules if they're not in the new list
-          setSelectedModules(prev => 
-            prev.filter(selected => 
+          setSelectedModules(prev =>
+            prev.filter(selected =>
               result.modules.some((m: Module) => m.id === selected.id)
             )
           );
@@ -124,6 +125,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
       yearLevel: parseInt(academicYear.replace('Year ', ''), 10) || 1,
       enrollmentIntake: enrollmentMonthYear,
       sponsorType: sponsorType as 'Self' | 'Parent' | 'Scholarship' | 'Other',
+      studentClass: studentClass.trim(),
       modules: selectedModules,
       status: RegistrationStatus.PENDING_YEAR_LEADER,
       submittedAt: new Date().toISOString(),
@@ -158,6 +160,8 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
             onSponsorTypeChange={setSponsorType}
             enrollmentMonthYear={enrollmentMonthYear}
             onEnrollmentMonthYearChange={setEnrollmentMonthYear}
+            studentClass={studentClass}
+            onStudentClassChange={setStudentClass}
             onNext={() => setStep(2)}
           />
         )}

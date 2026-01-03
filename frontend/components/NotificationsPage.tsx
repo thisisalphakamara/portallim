@@ -1,6 +1,6 @@
 import React from 'react';
 import { User } from '../types';
-import { useNotifications } from '../hooks/useNotifications';
+import { useNotificationContext } from '../contexts/NotificationContext';
 import { Notification } from '../services/notification.service';
 
 interface NotificationsPageProps {
@@ -17,7 +17,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ user }) => {
     markAllAsRead,
     deleteNotification,
     clearAllNotifications
-  } = useNotifications();
+  } = useNotificationContext();
 
   const formatTimestamp = (timestamp: string) => {
     if (!timestamp) return '';

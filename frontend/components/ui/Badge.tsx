@@ -8,14 +8,14 @@ interface BadgeProps {
 
 const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', className = '' }) => {
   const variantStyles = {
-    default: 'border border-black',
-    success: 'bg-black text-white',
-    warning: 'bg-yellow-500 text-black',
-    danger: 'bg-gray-600 text-white'
+    default: 'bg-gray-100 text-gray-800 border-gray-200', // Updated default for cleaner look
+    success: 'bg-green-500 text-white border-green-500',
+    warning: 'bg-amber-400 text-black border-amber-400',
+    danger: 'bg-red-500 text-white border-red-500'
   };
 
   return (
-    <span className={`px-2 py-1 text-[10px] font-bold uppercase ${variantStyles[variant]} ${className}`}>
+    <span className={`px-2 py-1 text-[10px] font-bold uppercase border rounded ${variantStyles[variant]} ${className}`}>
       {children}
     </span>
   );

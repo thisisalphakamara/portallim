@@ -8,6 +8,40 @@ interface StudentAccountsListProps {
   accounts: User[];
 }
 
+const getStatusBadge = (status?: string) => {
+  const s = status || 'NOT_STARTED';
+
+  if (s === 'APPROVED') {
+    return (
+      <span className="px-2 py-1 bg-green-500 text-white text-[10px] font-bold uppercase">
+        Approved
+      </span>
+    );
+  }
+
+  if (s === 'REJECTED') {
+    return (
+      <span className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold uppercase">
+        Rejected
+      </span>
+    );
+  }
+
+  if (s.startsWith('PENDING')) {
+    return (
+      <span className="px-2 py-1 bg-yellow-400 text-black text-[10px] font-bold uppercase">
+        Pending
+      </span>
+    );
+  }
+
+  return (
+    <span className="px-2 py-1 bg-gray-400 text-white text-[10px] font-bold uppercase">
+      {s.replace(/_/g, ' ')}
+    </span>
+  );
+};
+
 const StudentAccountsList: React.FC<StudentAccountsListProps> = ({ accounts }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [facultyFilter, setFacultyFilter] = useState<string>('all');
@@ -125,9 +159,7 @@ const StudentAccountsList: React.FC<StudentAccountsListProps> = ({ accounts }) =
                     <td className="p-4 font-bold">{account.name}</td>
                     <td className="p-4 font-mono text-gray-600">{account.email}</td>
                     <td className="p-4 text-right">
-                      <span className="px-2 py-1 bg-black text-white text-[10px] font-bold uppercase">
-                        Active
-                      </span>
+                      {getStatusBadge(account.registrationStatus)}
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
@@ -180,6 +212,11 @@ const StudentAccountsList: React.FC<StudentAccountsListProps> = ({ accounts }) =
                   <span className="px-2 py-1 bg-black text-white text-[10px] font-bold uppercase">
                     {selectedStudent.isFirstLogin ? 'First Login' : 'Active'}
                   </span>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 mt-2">
+                  <span className="text-xs font-bold uppercase">Registration Status</span>
+                  {getStatusBadge(selectedStudent.registrationStatus)}
                 </div>
 
                 {/* Student Information */}

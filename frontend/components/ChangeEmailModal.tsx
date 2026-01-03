@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { changeEmail } from '../services/auth.service';
 
 interface ChangeEmailModalProps {
   currentEmail: string;
@@ -35,12 +36,15 @@ const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({ currentEmail, onEma
     setLoading(true);
 
     try {
-      // Simulate API call - in a real app, this would call your backend
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      onEmailChanged(newEmail);
-      onClose();
-      alert('Email changed successfully! Please check your new email for verification.');
+      const result = await changeEmail(newEmail, password);
+
+      if (result.success) {
+        onEmailChanged(newEmail);
+        onClose();
+        alert('Email changed successfully! Please use your new email for future logins.');
+      } else {
+        setError(result.error || 'Failed to change email');
+      }
     } catch (error: any) {
       setError(error.message || 'Failed to change email');
     } finally {
@@ -55,7 +59,7 @@ const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({ currentEmail, onEma
           <h3 className="text-lg font-bold uppercase mb-4 tracking-widest border-b border-black pb-4">
             Change Email Address
           </h3>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Current Email</label>

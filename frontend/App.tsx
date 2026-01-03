@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout, { ActivePage } from './components/Layout';
 import StudentRegistration from './components/StudentRegistration';
@@ -9,6 +8,7 @@ import SystemAdminDashboard from './components/SystemAdminDashboard';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import StudentAccountsList from './components/StudentAccountsList';
 import NotificationsPage from './components/NotificationsPage';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { User, UserRole, RegistrationSubmission, RegistrationStatus } from './types';
 import limlogo from './assets/limlogo.png';
 import { login as apiLogin, logout as apiLogout, getCurrentUserProfile, changePassword as apiChangePassword } from './services/auth.service';
@@ -46,11 +46,18 @@ const App: React.FC = () => {
       if (user.isFirstLogin && user.role === UserRole.STUDENT) {
         setShowFirstLoginModal(true);
       }
-
-      // Load accounts if authorized
-      loadAuthorizedAccounts();
     }
   }, [user]);
+
+  // Load accounts when user logs in or navigates to relevant pages
+  useEffect(() => {
+    if (user && (activePage === 'accounts' || activePage === 'approvals')) {
+      loadAuthorizedAccounts();
+    } else if (user && user.role === UserRole.SYSTEM_ADMIN) {
+      // System admin might need accounts loaded immediately for dashboard stats if any
+      loadAuthorizedAccounts();
+    }
+  }, [user, activePage]);
 
   const loadAuthorizedAccounts = async () => {
     if (!user) return;
@@ -432,26 +439,28 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout
-      user={user}
-      onLogout={handleLogout}
-      activePage={activePage}
-      onNavigate={handleNavigate}
-    >
-      {showFirstLoginModal && (
-        <ChangePasswordModal
-          isFirstLogin={true}
-          onPasswordChanged={handleFirstLoginPasswordChange}
-          onClose={() => {
-            // Don't allow closing without changing password on first login
-            if (!user.isFirstLogin) {
-              setShowFirstLoginModal(false);
-            }
-          }}
-        />
-      )}
-      {renderContent()}
-    </Layout>
+    <NotificationProvider>
+      <Layout
+        user={user}
+        onLogout={handleLogout}
+        activePage={activePage}
+        onNavigate={handleNavigate}
+      >
+        {showFirstLoginModal && (
+          <ChangePasswordModal
+            isFirstLogin={true}
+            onPasswordChanged={handleFirstLoginPasswordChange}
+            onClose={() => {
+              // Don't allow closing without changing password on first login
+              if (!user.isFirstLogin) {
+                setShowFirstLoginModal(false);
+              }
+            }}
+          />
+        )}
+        {renderContent()}
+      </Layout>
+    </NotificationProvider>
   );
 };
 

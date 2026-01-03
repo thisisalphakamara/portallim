@@ -42,6 +42,7 @@ export interface User {
   phoneNumber?: string;
   sponsorType?: 'Self' | 'Parent' | 'Scholarship' | 'Other';
   enrollmentIntake?: string;
+  registrationStatus?: string;
 }
 
 export interface Module {
@@ -65,6 +66,7 @@ export interface RegistrationSubmission {
   academicYear: string;
   enrollmentIntake: string;
   yearLevel: number;
+  studentClass?: string;
   sponsorType?: 'Self' | 'Parent' | 'Scholarship' | 'Other';
   modules: Module[] | string[];
   status: RegistrationStatus;

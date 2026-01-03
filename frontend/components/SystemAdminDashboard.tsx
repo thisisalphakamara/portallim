@@ -33,13 +33,21 @@ interface SystemStats {
   lastBackup: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  faculty?: string;
+  program?: string;
+  studentId?: string;
+  createdAt?: string;
+}
 
-
-import { getSystemStats, getAuditLogs, runSystemBackup, clearSystemCache, exportAuditLogs } from '../services/admin.service';
+import { getSystemStats, getAuditLogs, runSystemBackup, clearSystemCache, exportAuditLogs, getAllStaff, getStudents } from '../services/admin.service';
 
 const SystemAdminDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'overview' | 'audit' | 'users' | 'settings'>('overview');
-  const [auditFilter, setAuditFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -47,6 +55,13 @@ const SystemAdminDashboard: React.FC = () => {
   const [backupLoading, setBackupLoading] = useState(false);
   const [cacheLoading, setCacheLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+
+  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalData, setModalData] = useState<User[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
+
   const facultyDisplayData = useMemo<FacultyDisplayData[]>(() => {
     const counts = stats?.facultyCounts ?? [];
     const entries = FACULTIES.map((faculty) => {
@@ -83,9 +98,6 @@ const SystemAdminDashboard: React.FC = () => {
   }, [activeSection]);
 
   const filteredLogs = logs.filter(log => {
-    if (auditFilter === 'all') return true;
-    return log.action.toLowerCase().includes(auditFilter.toLowerCase());
-  }).filter(log => {
     if (!searchQuery) return true;
     return (
       log.performedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -164,6 +176,85 @@ const SystemAdminDashboard: React.FC = () => {
     }
   };
 
+  // Stat card click handlers
+  const handleShowAllUsers = async () => {
+    setModalLoading(true);
+    setShowModal(true);
+    setModalTitle('All Users');
+    try {
+      const [staffResult, studentsResult] = await Promise.all([
+        getAllStaff(),
+        getStudents()
+      ]);
+
+      const allUsers: User[] = [];
+      if (staffResult.success && staffResult.staff) {
+        allUsers.push(...staffResult.staff);
+      }
+      if (studentsResult.success && studentsResult.students) {
+        allUsers.push(...studentsResult.students);
+      }
+
+      setModalData(allUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleShowStudents = async () => {
+    setModalLoading(true);
+    setShowModal(true);
+    setModalTitle('All Students');
+    try {
+      const result = await getStudents();
+      if (result.success && result.students) {
+        setModalData(result.students);
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleShowStaff = async () => {
+    setModalLoading(true);
+    setShowModal(true);
+    setModalTitle('All Staff Members');
+    try {
+      const result = await getAllStaff();
+      if (result.success && result.staff) {
+        setModalData(result.staff);
+      }
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleShowFaculties = () => {
+    setShowModal(true);
+    setModalTitle('All Faculties');
+    const facultyData: User[] = FACULTIES.map((faculty, index) => ({
+      id: `faculty-${index}`,
+      email: '-',
+      fullName: faculty,
+      role: UserRole.STUDENT, // Placeholder
+      faculty: faculty
+    }));
+    setModalData(facultyData);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setModalData([]);
+    setModalTitle('');
+  };
+
+
   const auditColumns = [
     {
       header: 'Timestamp',
@@ -231,16 +322,20 @@ const SystemAdminDashboard: React.FC = () => {
               value={(stats ? stats.totalUsers.toString() : '0')}
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
             />
-            <StatCard
-              label="Total Students"
-              value={(stats ? stats.activeStudents.toString() : '0')}
-              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
-            />
-            <StatCard
-              label="Total Staffs"
-              value={(stats ? stats.staffMembers.toString() : '0')}
-              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
-            />
+            <div onClick={handleShowStudents} className="cursor-pointer">
+              <StatCard
+                label="Total Students"
+                value={(stats ? stats.activeStudents.toString() : '0')}
+                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
+              />
+            </div>
+            <div onClick={handleShowStaff} className="cursor-pointer">
+              <StatCard
+                label="Total Staffs"
+                value={(stats ? stats.staffMembers.toString() : '0')}
+                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+              />
+            </div>
             <StatCard
               label="Total Faculties"
               value={(stats?.facultyCounts?.length || FACULTIES.length).toString()}
@@ -273,7 +368,7 @@ const SystemAdminDashboard: React.FC = () => {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <h4 className="text-sm font-bold uppercase tracking-widest mb-6">Quick Actions</h4>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={handleBackup}
                   disabled={backupLoading}
                   className="w-full p-4 border border-gray-200 rounded-lg text-xs font-bold uppercase hover:bg-black hover:text-white hover:border-black transition-all text-left flex justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
@@ -281,7 +376,7 @@ const SystemAdminDashboard: React.FC = () => {
                   <span>{backupLoading ? 'Running Backup...' : 'Run System Backup'}</span>
                   <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </button>
-                <button 
+                <button
                   onClick={handleClearCache}
                   disabled={cacheLoading}
                   className="w-full p-4 border border-gray-200 rounded-lg text-xs font-bold uppercase hover:bg-black hover:text-white hover:border-black transition-all text-left flex justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
@@ -289,7 +384,7 @@ const SystemAdminDashboard: React.FC = () => {
                   <span>{cacheLoading ? 'Clearing Cache...' : 'Clear Cache'}</span>
                   <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </button>
-                <button 
+                <button
                   onClick={handleExportLogs}
                   disabled={exportLoading}
                   className="w-full p-4 border border-gray-200 rounded-lg text-xs font-bold uppercase hover:bg-black hover:text-white hover:border-black transition-all text-left flex justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
@@ -328,27 +423,13 @@ const SystemAdminDashboard: React.FC = () => {
       {activeSection === 'audit' && (
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-wrap gap-2">
-              {['all', 'login', 'account', 'registration', 'password'].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setAuditFilter(filter)}
-                  className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${auditFilter === filter
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white border-gray-200 hover:border-gray-400 text-gray-600'
-                    }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-            <div className="relative">
+            <div className="relative flex-1 max-w-md">
               <input
                 type="text"
                 placeholder="Search logs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
               />
               <svg className="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -467,6 +548,100 @@ const SystemAdminDashboard: React.FC = () => {
 
           <div className="pt-4 flex justify-end">
             <Button size="lg">Save All Settings</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for detailed view */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-4xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b-2 border-black bg-black text-white flex items-center justify-between">
+              <h3 className="text-xl font-black uppercase">{modalTitle}</h3>
+              <button
+                onClick={closeModal}
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
+              {modalLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-sm font-bold text-gray-600">Loading...</p>
+                  </div>
+                </div>
+              ) : modalData.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 font-bold">No data available</p>
+                </div>
+              ) : modalTitle === 'All Faculties' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {modalData.map((item) => (
+                    <div key={item.id} className="p-4 border-2 border-black rounded-lg bg-gray-50">
+                      <p className="font-black text-lg">{item.fullName}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {stats?.facultyCounts?.find(f => f.faculty === item.fullName)?.count || 0} students
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-2 border-black">
+                    <thead>
+                      <tr className="bg-black text-white">
+                        <th className="px-4 py-3 text-left text-xs font-black uppercase">Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-black uppercase">Email</th>
+                        <th className="px-4 py-3 text-left text-xs font-black uppercase">Role</th>
+                        {modalTitle !== 'All Staff Members' && (
+                          <>
+                            <th className="px-4 py-3 text-left text-xs font-black uppercase">Faculty</th>
+                            <th className="px-4 py-3 text-left text-xs font-black uppercase">Program</th>
+                          </>
+                        )}
+                        {modalTitle === 'All Students' && (
+                          <th className="px-4 py-3 text-left text-xs font-black uppercase">Student ID</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {modalData.map((user, index) => (
+                        <tr key={user.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-4 py-3 border-t border-black font-bold">{user.fullName}</td>
+                          <td className="px-4 py-3 border-t border-black font-mono text-sm">{user.email}</td>
+                          <td className="px-4 py-3 border-t border-black">
+                            <span className="px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs font-bold">
+                              {user.role.replace('_', ' ')}
+                            </span>
+                          </td>
+                          {modalTitle !== 'All Staff Members' && (
+                            <>
+                              <td className="px-4 py-3 border-t border-black text-sm">{user.faculty || '-'}</td>
+                              <td className="px-4 py-3 border-t border-black text-sm">{user.program || '-'}</td>
+                            </>
+                          )}
+                          {modalTitle === 'All Students' && (
+                            <td className="px-4 py-3 border-t border-black font-mono text-sm">{user.studentId || '-'}</td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="p-8 border-t-2 border-black bg-white">
+              <p className="text-lg font-black text-black uppercase">
+                Total: {modalData.length} {modalTitle.toLowerCase().replace('all ', '')}
+              </p>
+            </div>
           </div>
         </div>
       )}

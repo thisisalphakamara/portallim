@@ -10,15 +10,20 @@ import fs from 'fs';
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    console.log('Multer destination called for file:', file.originalname);
     const uploadDir = path.join(process.cwd(), 'uploads', 'registration-documents');
+    console.log('Upload directory:', uploadDir);
     if (!fs.existsSync(uploadDir)) {
+      console.log('Creating upload directory...');
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
+    console.log('Generated filename:', filename);
+    cb(null, filename);
   }
 });
 
@@ -28,17 +33,29 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
+    console.log('File filter called for:', file.mimetype);
     // Accept only PDF files
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
+      console.error('File rejected: Invalid mimetype', file.mimetype);
       cb(new Error('Only PDF files are allowed'));
     }
   }
 });
 
 // Middleware for handling file uploads
-export const uploadRegistrationDocument = upload.single('document');
+export const uploadRegistrationDocument = (req: any, res: any, next: any) => {
+  console.log('uploadRegistrationDocument middleware called');
+  upload.single('document')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return next(err);
+    }
+    console.log('Multer processing complete');
+    next();
+  });
+};
 
 export const uploadDocument = asyncHandler(async (req: any, res: Response) => {
   const { submissionId } = req.params;
@@ -102,6 +119,7 @@ export const getDocuments = asyncHandler(async (req: any, res: Response) => {
     include: {
       student: true,
       documents: {
+        orderBy: { uploadedAt: 'desc' },
         include: {
           user: {
             select: { fullName: true }
@@ -116,8 +134,8 @@ export const getDocuments = asyncHandler(async (req: any, res: Response) => {
   }
 
   // Check access permissions
-  const hasAccess = 
-    user.role === Role.REGISTRAR || 
+  const hasAccess =
+    user.role === Role.REGISTRAR ||
     user.role === Role.SYSTEM_ADMIN ||
     user.role === Role.YEAR_LEADER ||
     user.role === Role.FINANCE_OFFICER ||
@@ -166,8 +184,8 @@ export const downloadDocument = asyncHandler(async (req: any, res: Response) => 
   }
 
   // Check access permissions
-  const hasAccess = 
-    user.role === Role.REGISTRAR || 
+  const hasAccess =
+    user.role === Role.REGISTRAR ||
     user.role === Role.SYSTEM_ADMIN ||
     user.role === Role.YEAR_LEADER ||
     user.role === Role.FINANCE_OFFICER ||
@@ -215,8 +233,8 @@ export const sendDocumentToEmail = asyncHandler(async (req: any, res: Response) 
   }
 
   // Check access permissions
-  const hasAccess = 
-    user.role === Role.REGISTRAR || 
+  const hasAccess =
+    user.role === Role.REGISTRAR ||
     user.role === Role.SYSTEM_ADMIN ||
     user.role === Role.YEAR_LEADER ||
     user.role === Role.FINANCE_OFFICER ||
@@ -235,7 +253,7 @@ export const sendDocumentToEmail = asyncHandler(async (req: any, res: Response) 
   try {
     const recipientEmail = user.role === Role.STUDENT ? user.email : document.submission.student.email;
     const studentName = document.submission.student.fullName;
-    
+
     // Send the document with attachment
     const emailSent = await emailService.sendDocumentWithAttachment(
       recipientEmail,

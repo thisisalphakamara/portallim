@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, changePassword, getMe } from '../controllers/auth.controller';
+import { login, changePassword, changeEmail, getMe } from '../controllers/auth.controller';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { validate, commonValidations } from '../middleware/validation.middleware';
 
@@ -28,6 +28,17 @@ router.post('/change-password', authenticateToken, validate([{
     return null;
   }
 }]), changePassword);
+
+router.post('/change-email', authenticateToken, validate([
+  commonValidations.email.field === 'email' ? { ...commonValidations.email, field: 'newEmail' } : commonValidations.email,
+  {
+    field: 'password',
+    required: true,
+    type: 'string',
+    minLength: 1,
+    maxLength: 128
+  }
+]), changeEmail);
 
 router.get('/me', authenticateToken, getMe);
 

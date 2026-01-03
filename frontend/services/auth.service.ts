@@ -22,3 +22,7 @@ export const getCurrentUserProfile = async () => {
 export const changePassword = async (newPassword: string) => {
     return api.post('/auth/change-password', { newPassword });
 };
+
+export const changeEmail = async (newEmail: string, password: string) => {
+    return api.post('/auth/change-email', { newEmail, password });
+};

@@ -13,6 +13,8 @@ interface ProfileStepProps {
   onSponsorTypeChange: (type: string) => void;
   enrollmentMonthYear: string;
   onEnrollmentMonthYearChange: (value: string) => void;
+  studentClass: string;
+  onStudentClassChange: (value: string) => void;
   onNext: () => void;
 }
 
@@ -27,6 +29,8 @@ const ProfileStep: React.FC<ProfileStepProps> = ({
   onSponsorTypeChange,
   enrollmentMonthYear,
   onEnrollmentMonthYearChange,
+  studentClass,
+  onStudentClassChange,
   onNext
 }) => {
   const semesterOptions = Array.from({ length: 8 }, (_, i) => ({
@@ -51,6 +55,10 @@ const ProfileStep: React.FC<ProfileStepProps> = ({
   const handleNext = () => {
     if (!phoneNumber || phoneNumber.trim() === '') {
       alert('Phone number is required. Please enter your phone number before proceeding.');
+      return;
+    }
+    if (!studentClass || studentClass.trim() === '') {
+      alert('Class / Section is required. Please enter your class before proceeding.');
       return;
     }
     onNext();
@@ -105,6 +113,14 @@ const ProfileStep: React.FC<ProfileStepProps> = ({
             value={sponsorType}
             onChange={(e) => onSponsorTypeChange(e.target.value)}
             options={sponsorOptions}
+          />
+          <Input
+            label="Class / Section *"
+            value={studentClass}
+            onChange={(e) => onStudentClassChange(e.target.value)}
+            placeholder="e.g. BS.E.M or Year 1 Sem 1"
+            required
+            className="h-[58px]"
           />
         </div>
       </div>

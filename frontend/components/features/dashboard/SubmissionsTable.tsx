@@ -61,12 +61,15 @@ const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions, onRowC
     (window as any).isDocumentReplacement = isReplacement;
   };
 
-  const handleUploadSuccess = () => {
+  const handleUploadSuccess = (document: any) => {
     // Refresh documents status for the uploaded submission
     if (selectedSubmission) {
       setDocumentsStatus(prev => ({ ...prev, [selectedSubmission.id]: true }));
+      // IMPORTANT: Update the document info immediately so "View" works without refresh
+      if (document) {
+        setDocumentsInfo(prev => ({ ...prev, [selectedSubmission.id]: document }));
+      }
     }
-    alert('Registration confirmation slip uploaded successfully!');
   };
 
   const handleDeleteDocument = async (submission: RegistrationSubmission) => {
@@ -157,109 +160,102 @@ const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions, onRowC
         <div className="flex flex-col space-y-2">
           {row.status === RegistrationStatus.APPROVED ? (
             loadingDocuments[row.id] ? (
-              <div className="flex items-center justify-center py-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-black"></div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
                   Checking...
                 </span>
               </div>
             ) : documentsStatus[row.id] ? (
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 border border-green-200">
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Uploaded
+                </span>
+
+                <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleViewDocument(row);
+                    }}
+                    className="p-1.5 text-gray-600 hover:bg-gray-50 hover:text-black transition-colors"
+                    title="View Document"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    Uploaded
-                  </span>
-                  <div className="flex items-center space-x-1 ml-auto">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleViewDocument(row);
-                      }}
-                      className="p-1.5 text-gray-600 hover:bg-gray-50 border border-gray-200 rounded transition-colors"
-                      title="View Document"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </button>
-                    {canUploadDocuments && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleUploadDocument(row, true);
-                          }}
-                          disabled={deletingDocuments[row.id]}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Replace Document"
-                        >
-                          {deletingDocuments[row.id] ? (
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                          ) : (
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                          )}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDeleteDocument(row);
-                          }}
-                          disabled={deletingDocuments[row.id]}
-                          className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Delete Document"
-                        >
-                          {deletingDocuments[row.id] ? (
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
-                          ) : (
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          )}
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  </button>
+                  {canUploadDocuments && (
+                    <>
+                      <div className="w-px h-4 bg-gray-200"></div>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleUploadDocument(row, true);
+                        }}
+                        disabled={deletingDocuments[row.id]}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
+                        title="Replace Document"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                      <div className="w-px h-4 bg-gray-200"></div>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteDocument(row);
+                        }}
+                        disabled={deletingDocuments[row.id]}
+                        className="p-1.5 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        title="Delete Document"
+                      >
+                        {deletingDocuments[row.id] ? (
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        )}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
               canUploadDocuments ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     console.log('Upload button clicked for:', row.studentName);
                     handleUploadDocument(row);
                   }}
-                  className="text-xs px-3 py-1 bg-green-600 hover:bg-green-700 border-green-600"
+                  className="inline-flex items-center px-3 py-1.5 bg-black text-white text-[10px] font-bold uppercase tracking-widest rounded hover:bg-gray-800 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] active:translate-y-px active:shadow-none"
                 >
-                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l-4 4m4-4v12" />
                   </svg>
-                  Upload Document
-                </Button>
+                  Upload Slip
+                </button>
               ) : (
-                <div className="flex items-center justify-center py-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                    No Document
-                  </span>
-                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 bg-gray-100 px-2 py-1 rounded inline-block">
+                  No Slip
+                </span>
               )
             )
           ) : (
-            <div className="flex items-center justify-center py-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                Pending Approval
-              </span>
-            </div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500 bg-amber-50 px-2 py-1 rounded border border-amber-100 inline-block">
+              Pending
+            </span>
           )}
         </div>
       )
@@ -267,17 +263,16 @@ const SubmissionsTable: React.FC<SubmissionsTableProps> = ({ submissions, onRowC
     {
       header: 'Action',
       accessor: (row) => (
-        <Button
-          variant="outline"
-          size="sm"
-          className="underline hover:no-underline"
+        <button
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             onRowClick(row);
           }}
+          className="text-xs font-bold text-gray-400 hover:text-black underline decoration-gray-300 hover:decoration-black underline-offset-4 transition-all"
         >
           View Details
-        </Button>
+        </button>
       ),
       className: 'text-right'
     }

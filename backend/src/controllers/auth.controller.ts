@@ -51,11 +51,11 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
         const remainingAttempts = Math.max(0, MAX_LOGIN_ATTEMPTS - attempts);
         let errorMessage = error.message;
-        
+
         if (remainingAttempts > 0) {
             errorMessage += ` ${remainingAttempts} attempts remaining.`;
         }
-        
+
         if (shouldLock) {
             errorMessage += ` Account locked for ${LOCK_DURATION_MINUTES} minutes.`;
         }
@@ -70,7 +70,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     if (!jwtSecret) {
         throw new AppError('Server configuration error', 500);
     }
-    
+
     const token = jwt.sign(
         { id: user.id, email: user.email, role: user.role },
         jwtSecret,
@@ -129,6 +129,82 @@ export const changePassword = asyncHandler(async (req: any, res: Response) => {
     });
 
     res.json({ success: true, message: 'Password updated successfully.' });
+});
+
+export const changeEmail = asyncHandler(async (req: any, res: Response) => {
+    const { newEmail, password } = req.body;
+    const userId = req.user.id;
+
+    // Validate inputs
+    if (!newEmail || !password) {
+        throw new AppError('New email and password are required', 400);
+    }
+
+    // Get current user
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+        throw new AppError('User not found', 404);
+    }
+
+    // Check if new email is same as current
+    if (newEmail.toLowerCase() === user.email.toLowerCase()) {
+        throw new AppError('New email must be different from current email', 400);
+    }
+
+    // Verify password by attempting to sign in with Supabase
+    if (user.supabaseId) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: user.email,
+            password: password
+        });
+
+        if (signInError) {
+            throw new AppError('Invalid password', 401);
+        }
+    }
+
+    // Check if new email already exists
+    const existingUser = await prisma.user.findFirst({
+        where: { email: newEmail.toLowerCase() }
+    });
+
+    if (existingUser) {
+        throw new AppError('Email address already in use', 400);
+    }
+
+    // Update email in Supabase
+    if (user.supabaseId) {
+        const { error } = await supabase.auth.admin.updateUserById(user.supabaseId, {
+            email: newEmail.toLowerCase()
+        });
+
+        if (error) {
+            throw new AppError(`Failed to update email in authentication system: ${error.message}`, 500);
+        }
+    }
+
+    // Update email in database
+    await prisma.user.update({
+        where: { id: userId },
+        data: { email: newEmail.toLowerCase() }
+    });
+
+    // Create audit log
+    await prisma.auditLog.create({
+        data: {
+            action: 'EMAIL_CHANGED',
+            performedBy: userId,
+            targetUser: userId,
+            details: `Email changed from ${user.email} to ${newEmail.toLowerCase()}`,
+            ipAddress: req.ip || 'Unknown'
+        }
+    });
+
+    res.json({
+        success: true,
+        message: 'Email updated successfully. Please use your new email for future logins.',
+        newEmail: newEmail.toLowerCase()
+    });
 });
 
 export const getMe = asyncHandler(async (req: any, res: Response) => {

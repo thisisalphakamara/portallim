@@ -6,7 +6,7 @@ import { emailService } from '../services/email.service';
 import { notificationService } from '../services/notification.service';
 
 export const submitRegistration = asyncHandler(async (req: any, res: Response) => {
-    const { semester, academicYear, modules, enrollmentIntake, yearLevel, phoneNumber, nationalId, sponsorType } = req.body;
+    const { semester, academicYear, modules, enrollmentIntake, yearLevel, phoneNumber, nationalId, sponsorType, studentClass } = req.body;
     const student = req.user;
 
     if (student.role !== Role.STUDENT) {
@@ -65,6 +65,7 @@ export const submitRegistration = asyncHandler(async (req: any, res: Response) =
             academicYear,
             enrollmentIntake,
             yearLevel,
+            class: studentClass,
             modules,
             status: ApprovalStatus.PENDING_YEAR_LEADER
         }
@@ -148,6 +149,7 @@ export const getRegistrations = async (req: any, res: Response) => {
             phoneNumber: reg.student.phoneNumber || '',
             nationalId: reg.student.nationalId,
             sponsorType: reg.student.sponsorType,
+            studentClass: reg.class,
             faculty: reg.faculty.name,
             program: reg.program.name,
             approvalHistory: reg.approvalLogs.map(log => ({

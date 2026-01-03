@@ -1,8 +1,10 @@
+
 import React, { useState, useMemo } from 'react';
 import { User, RegistrationSubmission, RegistrationStatus } from '../types';
 import ApprovalModal from './ApprovalModal';
 import { DashboardHeader, TasksTable, SubmissionsTable, DashboardFilters } from './features/dashboard';
 import { useSearch, useFilter } from '../hooks';
+import RegistrationSlipsSection from './RegistrationSlipsSection';
 
 interface RegistrarDashboardProps {
   user: User;
@@ -11,15 +13,15 @@ interface RegistrarDashboardProps {
   onReject: (id: string) => void;
 }
 
-const RegistrarDashboard: React.FC<RegistrarDashboardProps> = ({ 
-  user, 
-  submissions, 
-  onApprove, 
-  onReject 
+const RegistrarDashboard: React.FC<RegistrarDashboardProps> = ({
+  user,
+  submissions,
+  onApprove,
+  onReject
 }) => {
   const [selectedSubmission, setSelectedSubmission] = useState<RegistrationSubmission | null>(null);
 
-  const myTasks = useMemo(() => 
+  const myTasks = useMemo(() =>
     submissions.filter(s => s.status === RegistrationStatus.PENDING_REGISTRAR),
     [submissions]
   );
@@ -73,6 +75,8 @@ const RegistrarDashboard: React.FC<RegistrarDashboardProps> = ({
         <TasksTable tasks={myTasks} onReview={setSelectedSubmission} />
       </div>
 
+      <RegistrationSlipsSection submissions={submissions} registrarName={user.name} />
+
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h3 className="text-xl font-bold uppercase tracking-widest">All Registrations</h3>
@@ -83,8 +87,8 @@ const RegistrarDashboard: React.FC<RegistrarDashboardProps> = ({
             onStatusFilterChange={setStatusFilter}
           />
         </div>
-        <SubmissionsTable 
-          submissions={displayedSubmissions} 
+        <SubmissionsTable
+          submissions={displayedSubmissions}
           onRowClick={setSelectedSubmission}
           userRole={user.role}
         />

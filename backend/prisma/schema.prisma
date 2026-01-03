@@ -32,12 +32,13 @@ model User {
   documents       RegistrationDocument[]
   submissions     Submission[]
   notifications   Notification[]
+  auditLogsPerformed AuditLog[]          @relation("AuditPerformedBy")
+  auditLogsTargeted  AuditLog[]          @relation("AuditTarget")
   faculty         Faculty?               @relation(fields: [facultyId], references: [id])
   program         Program?               @relation(fields: [programId], references: [id])
 
-  @@unique([email, nationalId])
-  @@unique([email, passportNumber])
   @@index([email])
+  @@index([role])
 }
 
 model Faculty {
@@ -84,6 +85,7 @@ model Submission {
   updatedAt        DateTime               @updatedAt
   enrollmentIntake String
   yearLevel        Int?
+  class            String?
   approvalLogs     ApprovalLog[]
   documents        RegistrationDocument[]
   faculty          Faculty                @relation(fields: [facultyId], references: [id])
@@ -151,4 +153,22 @@ enum NotificationType {
   SUCCESS
   WARNING
   ERROR
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String   // e.g., "ACCOUNT_CREATED", "LOGIN_SUCCESS", "LOGIN_FAILED", "PASSWORD_CHANGED"
+  performedBy String   // User ID who performed the action
+  targetUser  String?  // User ID who was affected (for account creation, etc.)
+  details     String?  // Additional details about the action
+  ipAddress   String?  // IP address of the user
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  user        User     @relation("AuditPerformedBy", fields: [performedBy], references: [id])
+  target      User?    @relation("AuditTarget", fields: [targetUser], references: [id])
+
+  @@index([performedBy])
+  @@index([targetUser])
+  @@index([action])
+  @@index([createdAt])
 }

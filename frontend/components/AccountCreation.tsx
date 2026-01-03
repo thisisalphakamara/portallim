@@ -86,6 +86,60 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
     }
   };
 
+  // Helper function to extract faculty abbreviation
+  const getFacultyAbbreviation = (facultyName: string): string => {
+    // Try to extract abbreviation from parentheses first
+    const abbrMatch = facultyName.match(/\(([A-Z]+)\)/);
+    if (abbrMatch) {
+      return abbrMatch[1].toLowerCase();
+    }
+
+    // Fallback: extract from faculty name
+    return facultyName
+      .toLowerCase()
+      .replace(/faculty of /i, '')
+      .replace(/\s+/g, '')
+      .replace(/[^a-z]/g, '');
+  };
+
+  // Helper function to generate email from name and role
+  const generateEmailFromName = (fullName: string, userRole: UserRole, facultyName?: string): string => {
+    if (!fullName.trim()) return '';
+
+    // Extract first name and convert to lowercase, remove special characters
+    const firstName = fullName.trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, '');
+
+    if (!firstName) return '';
+
+    if (userRole === UserRole.REGISTRAR) {
+      return `${firstName}.registrar@limkokwing.edu.sl`;
+    } else if (userRole === UserRole.FINANCE_OFFICER) {
+      return `${firstName}.finance@limkokwing.edu.sl`;
+    } else if (userRole === UserRole.YEAR_LEADER && facultyName) {
+      const abbr = getFacultyAbbreviation(facultyName);
+      return `${firstName}.yearleader.${abbr}@limkokwing.edu.sl`;
+    }
+
+    return '';
+  };
+
+  // Auto-generate email when name or role changes
+  useEffect(() => {
+    if (role !== UserRole.STUDENT && name.trim()) {
+      if (role === UserRole.YEAR_LEADER && selectedFacultyId) {
+        const selectedFaculty = faculties.find(f => f.id === selectedFacultyId);
+        if (selectedFaculty) {
+          const generatedEmail = generateEmailFromName(name, role, selectedFaculty.name);
+          setEmail(generatedEmail);
+        }
+      } else if (role === UserRole.REGISTRAR || role === UserRole.FINANCE_OFFICER) {
+        const generatedEmail = generateEmailFromName(name, role);
+        setEmail(generatedEmail);
+      }
+    }
+  }, [name, role, selectedFacultyId, faculties]);
+
+
   const generateStudentId = () => {
     const year = new Date().getFullYear().toString().slice(-2);
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
@@ -336,9 +390,22 @@ const AccountCreation: React.FC<AccountCreationProps> = ({ onAccountCreated, cur
           <label className="text-[10px] font-bold uppercase tracking-widest">Institutional Email *</label>
           <input
             type="email" required value={email} onChange={e => setEmail(e.target.value)}
-            placeholder={`${role.toLowerCase()}@limkokwing.edu.sl`}
+            placeholder={
+              role === UserRole.REGISTRAR
+                ? 'firstname.registrar@limkokwing.edu.sl'
+                : role === UserRole.FINANCE_OFFICER
+                  ? 'firstname.finance@limkokwing.edu.sl'
+                  : role === UserRole.YEAR_LEADER
+                    ? 'firstname.yearleader.faculty@limkokwing.edu.sl'
+                    : `${role.toLowerCase()}@limkokwing.edu.sl`
+            }
             className="w-full p-3 border-2 border-black outline-none focus:ring-2 focus:ring-black"
           />
+          {(role === UserRole.REGISTRAR || role === UserRole.FINANCE_OFFICER || role === UserRole.YEAR_LEADER) && (
+            <p className="text-[10px] text-black mt-1">
+              Email will auto-generate based on the name you enter above
+            </p>
+          )}
         </div>
 
         <div className="space-y-1">

@@ -16,34 +16,100 @@ export const createStaffAccount = async (req: any, res: Response) => {
     }
 
     try {
+        // Validate email format based on role
+        const emailLower = email.toLowerCase();
+
+        // Extract first name from full name for validation
+        const firstName = fullName.trim().split(/\s+/)[0].toLowerCase();
+
+        if (role === Role.REGISTRAR) {
+            // Expected format: firstname.registrar@limkokwing.edu.sl
+            const expectedPattern = /^[a-z]+\.registrar@limkokwing\.edu\.sl$/;
+            if (!expectedPattern.test(emailLower)) {
+                return res.status(400).json({
+                    error: `Registrar email must follow format: {firstname}.registrar@limkokwing.edu.sl (e.g., ${firstName}.registrar@limkokwing.edu.sl)`
+                });
+            }
+        } else if (role === Role.FINANCE_OFFICER) {
+            // Expected format: firstname.finance@limkokwing.edu.sl
+            const expectedPattern = /^[a-z]+\.finance@limkokwing\.edu\.sl$/;
+            if (!expectedPattern.test(emailLower)) {
+                return res.status(400).json({
+                    error: `Finance Officer email must follow format: {firstname}.finance@limkokwing.edu.sl (e.g., ${firstName}.finance@limkokwing.edu.sl)`
+                });
+            }
+        } else if (role === Role.YEAR_LEADER) {
+            // Year leader email must be in format: firstname.yearleader.{facultyAbbr}@limkokwing.edu.sl
+            if (!facultyId) {
+                return res.status(400).json({
+                    error: 'Faculty must be assigned for Year Leader role'
+                });
+            }
+
+            // Get faculty details
+            const faculty = await prisma.faculty.findUnique({
+                where: { id: facultyId }
+            });
+
+            if (!faculty) {
+                return res.status(400).json({ error: 'Invalid faculty selected' });
+            }
+
+            // Extract faculty abbreviation from faculty name
+            let facultyAbbr = '';
+
+            // First, try to extract abbreviation from parentheses
+            const abbrMatch = faculty.name.match(/\(([A-Z]+)\)/);
+            if (abbrMatch) {
+                facultyAbbr = abbrMatch[1].toLowerCase();
+            } else {
+                // Fallback: extract from faculty name
+                facultyAbbr = faculty.name
+                    .toLowerCase()
+                    .replace(/faculty of /i, '')
+                    .replace(/\s+/g, '')
+                    .replace(/[^a-z]/g, '');
+            }
+
+            // Expected format: firstname.yearleader.fict@limkokwing.edu.sl
+            const expectedPattern = new RegExp(`^[a-z]+\\.yearleader\\.${facultyAbbr}@limkokwing\\.edu\\.sl$`);
+            const expectedEmail = `${firstName}.yearleader.${facultyAbbr}@limkokwing.edu.sl`;
+
+            if (!expectedPattern.test(emailLower)) {
+                return res.status(400).json({
+                    error: `Year Leader email for ${faculty.name} must follow format: {firstname}.yearleader.${facultyAbbr}@limkokwing.edu.sl (e.g., ${expectedEmail})`
+                });
+            }
+        }
+
         // Check if user already exists in local database
         console.log('Checking local database for email:', email);
         const existingUser = await prisma.user.findFirst({
             where: { email }
         });
-
         console.log('Local database result:', existingUser ? 'USER FOUND' : 'USER NOT FOUND');
 
         // Check if user already exists in Supabase Auth
         console.log('Checking Supabase Auth for email:', email);
         const { data: existingSupabaseUsers, error: listError } = await supabase.auth.admin.listUsers();
-        
+
         if (listError) {
             console.log('ERROR: Could not fetch Supabase users:', listError);
             return res.status(500).json({ error: 'Failed to check Supabase Auth' });
         }
-        
+
         const emailExistsInSupabase = existingSupabaseUsers.users.some(user => user.email === email);
         console.log('Supabase Auth result:', emailExistsInSupabase ? 'EMAIL FOUND' : 'EMAIL NOT FOUND');
-        
-        // Only block creation if user exists in BOTH systems (complete user)
-        // If user exists in only one system, it's a partial/incomplete registration that should be cleaned up
+
+        // Email must be unique for all roles
         if (existingUser && emailExistsInSupabase) {
             console.log('ERROR: Complete user exists in both systems');
-            return res.status(400).json({ error: 'A user with this email address has already been registered' });
+            return res.status(400).json({
+                error: 'A user with this email address has already been registered'
+            });
         }
 
-        // If user exists partially, clean up the partial registration first
+        // Clean up partial registrations if needed
         if (existingUser && !emailExistsInSupabase) {
             console.log('Cleaning up partial registration: User exists in local DB but not in Supabase');
             await prisma.user.delete({ where: { id: existingUser.id } });
@@ -57,6 +123,30 @@ export const createStaffAccount = async (req: any, res: Response) => {
             }
         }
 
+        // Check for duplicate national ID
+        if (nationalId) {
+            const duplicateNationalId = await prisma.user.findFirst({
+                where: { nationalId }
+            });
+            if (duplicateNationalId) {
+                return res.status(400).json({
+                    error: 'A user with this national ID already exists'
+                });
+            }
+        }
+
+        // Check for duplicate passport
+        if (passportNumber) {
+            const duplicatePassport = await prisma.user.findFirst({
+                where: { passportNumber }
+            });
+            if (duplicatePassport) {
+                return res.status(400).json({
+                    error: 'A user with this passport number already exists'
+                });
+            }
+        }
+
         console.log('All checks passed, proceeding with user creation...');
 
         // Generate unique staff identifier
@@ -64,12 +154,16 @@ export const createStaffAccount = async (req: any, res: Response) => {
         console.log('Generated staff identifier:', staffIdentifier);
 
         // 1. Create user in Supabase Auth
-        console.log('Creating user in Supabase Auth...');
+        console.log('Creating user in Supabase Auth with email:', email);
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
             email,
             password,
             email_confirm: true,
-            user_metadata: { fullName, role, staffIdentifier }
+            user_metadata: {
+                fullName,
+                role,
+                staffIdentifier
+            }
         });
 
         if (authError) {
@@ -93,6 +187,17 @@ export const createStaffAccount = async (req: any, res: Response) => {
             }
         });
 
+        // 3. Log the account creation in audit log
+        await prisma.auditLog.create({
+            data: {
+                action: 'ACCOUNT_CREATED',
+                performedBy: req.user.id,
+                targetUser: newUser.id,
+                details: `Created ${role} account for ${fullName} (${email})`,
+                ipAddress: req.ip || 'Unknown'
+            }
+        });
+
         res.status(201).json({
             success: true,
             user: newUser,
@@ -100,7 +205,7 @@ export const createStaffAccount = async (req: any, res: Response) => {
         });
     } catch (error: any) {
         console.error('Create staff error:', error);
-        
+
         // Handle unique constraint violations
         if (error.code === 'P2002') {
             const target = error.meta?.target;
@@ -111,13 +216,17 @@ export const createStaffAccount = async (req: any, res: Response) => {
                 return res.status(400).json({ error: 'A user with this passport number already exists' });
             }
             if (target?.includes('email')) {
-                return res.status(400).json({ error: 'A user with this email and identifier combination already exists' });
+                return res.status(400).json({ error: 'A user with this email already exists' });
+            }
+            if (target?.includes('staffIdentifier')) {
+                return res.status(400).json({ error: 'Staff identifier conflict. Please try again.' });
             }
         }
-        
+
         res.status(500).json({ error: error.message });
     }
 };
+
 
 export const getSystemStats = async (req: any, res: Response) => {
     try {
@@ -166,18 +275,59 @@ export const getSystemStats = async (req: any, res: Response) => {
 
 export const getAuditLogs = async (req: any, res: Response) => {
     try {
-        const logs = await prisma.approvalLog.findMany({
-            include: {
-                user: true,
-                submission: {
-                    include: { student: true }
-                }
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 100
-        });
+        console.log('Fetching all audit logs');
 
-        const formattedLogs = logs.map(log => ({
+        let auditLogs: any[] = [];
+        let approvalLogs: any[] = [];
+
+        // Fetch from AuditLog table (account creations, logins, etc.)
+        try {
+            auditLogs = await prisma.auditLog.findMany({
+                include: {
+                    user: true,
+                    target: true
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 100
+            });
+            console.log(`Found ${auditLogs.length} audit logs`);
+        } catch (auditError) {
+            console.error('Error fetching audit logs:', auditError);
+            // Continue even if audit logs fail
+        }
+
+        // Fetch from ApprovalLog table (registration approvals)
+        try {
+            approvalLogs = await prisma.approvalLog.findMany({
+                include: {
+                    user: true,
+                    submission: {
+                        include: { student: true }
+                    }
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 100
+            });
+            console.log(`Found ${approvalLogs.length} approval logs`);
+        } catch (approvalError) {
+            console.error('Error fetching approval logs:', approvalError);
+            // Continue even if approval logs fail
+        }
+
+        // Format audit logs
+        const formattedAuditLogs = auditLogs.map(log => ({
+            id: log.id,
+            action: log.action,
+            performedBy: log.user.fullName,
+            role: log.user.role,
+            targetUser: log.target?.fullName || 'N/A',
+            details: log.details || 'No details provided',
+            timestamp: log.createdAt.toISOString(),
+            ipAddress: log.ipAddress || 'Unknown'
+        }));
+
+        // Format approval logs
+        const formattedApprovalLogs = approvalLogs.map(log => ({
             id: log.id,
             action: log.action,
             performedBy: log.user.fullName,
@@ -185,11 +335,19 @@ export const getAuditLogs = async (req: any, res: Response) => {
             targetUser: log.submission?.student?.fullName || 'N/A',
             details: log.comments || 'No details provided',
             timestamp: log.createdAt.toISOString(),
-            ipAddress: 'System' // We don't track IPs yet
+            ipAddress: 'System'
         }));
 
-        res.json({ success: true, logs: formattedLogs });
+        // Combine and sort by timestamp
+        const allLogs = [...formattedAuditLogs, ...formattedApprovalLogs]
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        console.log(`Total combined logs: ${allLogs.length}`);
+        console.log('Sending response with', allLogs.length, 'logs');
+
+        res.json({ success: true, logs: allLogs });
     } catch (error: any) {
+        console.error('ERROR in getAuditLogs:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -221,26 +379,18 @@ export const runSystemBackup = async (req: any, res: Response) => {
     try {
         // Simulate system backup process
         const backupStartTime = new Date();
-        
+
         // In a real implementation, this would:
         // 1. Create database backup
         // 2. Backup file storage
         // 3. Create system state snapshot
-        
+
         await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate backup process
-        
+
         const backupEndTime = new Date();
         const backupDuration = Math.round((backupEndTime.getTime() - backupStartTime.getTime()) / 1000);
-        
-        // Log the backup action
-        await prisma.approvalLog.create({
-            data: {
-                submissionId: 'system-backup', // Special ID for system actions
-                userId: req.user.id,
-                action: 'SYSTEM_BACKUP',
-                comments: `System backup completed in ${backupDuration} seconds`
-            }
-        });
+
+        console.log(`System backup completed by ${req.user.email} in ${backupDuration} seconds`);
 
         res.json({
             success: true,
@@ -256,25 +406,17 @@ export const runSystemBackup = async (req: any, res: Response) => {
 export const clearSystemCache = async (req: any, res: Response) => {
     try {
         const cacheClearStartTime = new Date();
-        
+
         // In a real implementation, this would:
         // 1. Clear Redis cache
         // 2. Clear application cache
         // 3. Clear session cache where appropriate
-        
+
         await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate cache clearing
-        
+
         const cacheClearEndTime = new Date();
-        
-        // Log the cache clear action
-        await prisma.approvalLog.create({
-            data: {
-                submissionId: 'system-cache-clear', // Special ID for system actions
-                userId: req.user.id,
-                action: 'CACHE_CLEARED',
-                comments: 'System cache cleared successfully'
-            }
-        });
+
+        console.log(`System cache cleared by ${req.user.email}`);
 
         res.json({
             success: true,
@@ -289,7 +431,7 @@ export const clearSystemCache = async (req: any, res: Response) => {
 export const exportAuditLogs = async (req: any, res: Response) => {
     try {
         const { startDate, endDate, format = 'json' } = req.query;
-        
+
         // Build date filter
         let dateFilter: any = {};
         if (startDate || endDate) {
@@ -297,7 +439,7 @@ export const exportAuditLogs = async (req: any, res: Response) => {
             if (startDate) dateFilter.createdAt.gte = new Date(startDate as string);
             if (endDate) dateFilter.createdAt.lte = new Date(endDate as string);
         }
-        
+
         // Fetch logs with optional date filtering
         const logs = await prisma.approvalLog.findMany({
             where: dateFilter,
@@ -322,23 +464,15 @@ export const exportAuditLogs = async (req: any, res: Response) => {
             ipAddress: 'System' // We don't track IPs yet
         }));
 
-        // Log the export action
-        await prisma.approvalLog.create({
-            data: {
-                submissionId: 'system-export-logs', // Special ID for system actions
-                userId: req.user.id,
-                action: 'LOGS_EXPORTED',
-                comments: `Exported ${formattedLogs.length} audit logs`
-            }
-        });
+        console.log(`Audit logs exported by ${req.user.email}: ${formattedLogs.length} logs`);
 
         if (format === 'csv') {
             // Convert to CSV format
             const csvHeader = 'ID,Action,Performed By,Role,Target User,Details,Timestamp,IP Address\n';
-            const csvData = formattedLogs.map(log => 
+            const csvData = formattedLogs.map(log =>
                 `"${log.id}","${log.action}","${log.performedBy}","${log.role}","${log.targetUser}","${log.details}","${log.timestamp}","${log.ipAddress}"`
             ).join('\n');
-            
+
             res.setHeader('Content-Type', 'text/csv');
             res.setHeader('Content-Disposition', `attachment; filename="audit-logs-${new Date().toISOString().split('T')[0]}.csv"`);
             res.send(csvHeader + csvData);
@@ -357,3 +491,4 @@ export const exportAuditLogs = async (req: any, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 };
+
