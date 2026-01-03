@@ -93,8 +93,8 @@ export const submitRegistration = asyncHandler(async (req: any, res: Response) =
     emailService.sendRegistrationSubmissionNotification(
         student.email,
         student.fullName,
-        student.faculty || 'Unknown Faculty',
-        student.program || 'Unknown Program',
+        student.faculty?.name || 'Unknown Faculty',
+        student.program?.name || 'Unknown Program',
         semester,
         academicYear
     ).catch(err => console.error('Background email failed:', err));

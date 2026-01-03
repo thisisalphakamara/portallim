@@ -58,7 +58,7 @@ const ProfileStep: React.FC<ProfileStepProps> = ({
       return;
     }
     if (!studentClass || studentClass.trim() === '') {
-      alert('Class / Section is required. Please enter your class before proceeding.');
+      alert('Class is required. Please enter your class before proceeding.');
       return;
     }
     onNext();
@@ -115,12 +115,12 @@ const ProfileStep: React.FC<ProfileStepProps> = ({
             options={sponsorOptions}
           />
           <Input
-            label="Class / Section *"
+            label="Class *"
             value={studentClass}
             onChange={(e) => onStudentClassChange(e.target.value)}
-            placeholder="e.g. BS.E.M or Year 1 Sem 1"
+            placeholder="BSEM1101"
             required
-            className="h-[58px]"
+            className="h-[48px]"
           />
         </div>
       </div>
