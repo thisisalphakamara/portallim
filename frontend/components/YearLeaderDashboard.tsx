@@ -11,20 +11,20 @@ interface YearLeaderDashboardProps {
   onReject: (id: string) => void;
 }
 
-const YearLeaderDashboard: React.FC<YearLeaderDashboardProps> = ({ 
-  user, 
-  submissions, 
-  onApprove, 
-  onReject 
+const YearLeaderDashboard: React.FC<YearLeaderDashboardProps> = ({
+  user,
+  submissions,
+  onApprove,
+  onReject
 }) => {
   const [selectedSubmission, setSelectedSubmission] = useState<RegistrationSubmission | null>(null);
 
-  const filteredByFaculty = useMemo(() => 
+  const filteredByFaculty = useMemo(() =>
     submissions.filter(s => s.faculty === user.faculty),
     [submissions, user.faculty]
   );
 
-  const myTasks = useMemo(() => 
+  const myTasks = useMemo(() =>
     filteredByFaculty.filter(s => s.status === RegistrationStatus.PENDING_YEAR_LEADER),
     [filteredByFaculty]
   );
@@ -75,7 +75,18 @@ const YearLeaderDashboard: React.FC<YearLeaderDashboardProps> = ({
 
       <div className="space-y-4">
         <h3 className="text-xl font-bold uppercase tracking-widest">Active Approval Tasks</h3>
-        <TasksTable tasks={myTasks} onReview={setSelectedSubmission} />
+        {myTasks.length > 0 ? (
+          <TasksTable tasks={myTasks} onReview={setSelectedSubmission} />
+        ) : (
+          <div className="bg-gray-50 border border-black p-12 text-center space-y-4">
+            <p className="text-sm font-bold uppercase tracking-widest text-gray-400">No pending tasks for your faculty</p>
+            {submissions.some(s => s.status === RegistrationStatus.PENDING_YEAR_LEADER && s.faculty !== user.faculty) && (
+              <p className="text-[10px] font-bold uppercase text-amber-600 bg-amber-50 inline-block px-3 py-1 border border-amber-100">
+                ⚠️ Note: There are pending registrations for other faculties.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -88,8 +99,8 @@ const YearLeaderDashboard: React.FC<YearLeaderDashboardProps> = ({
             onStatusFilterChange={setStatusFilter}
           />
         </div>
-        <SubmissionsTable 
-          submissions={displayedSubmissions} 
+        <SubmissionsTable
+          submissions={displayedSubmissions}
           onRowClick={setSelectedSubmission}
           userRole={user.role}
         />

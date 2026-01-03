@@ -11,15 +11,15 @@ interface FinanceOfficerDashboardProps {
   onReject: (id: string) => void;
 }
 
-const FinanceOfficerDashboard: React.FC<FinanceOfficerDashboardProps> = ({ 
-  user, 
-  submissions, 
-  onApprove, 
-  onReject 
+const FinanceOfficerDashboard: React.FC<FinanceOfficerDashboardProps> = ({
+  user,
+  submissions,
+  onApprove,
+  onReject
 }) => {
   const [selectedSubmission, setSelectedSubmission] = useState<RegistrationSubmission | null>(null);
 
-  const myTasks = useMemo(() => 
+  const myTasks = useMemo(() =>
     submissions.filter(s => s.status === RegistrationStatus.PENDING_FINANCE),
     [submissions]
   );
@@ -70,7 +70,13 @@ const FinanceOfficerDashboard: React.FC<FinanceOfficerDashboardProps> = ({
 
       <div className="space-y-4">
         <h3 className="text-xl font-bold uppercase tracking-widest">Active Approval Tasks</h3>
-        <TasksTable tasks={myTasks} onReview={setSelectedSubmission} />
+        {myTasks.length > 0 ? (
+          <TasksTable tasks={myTasks} onReview={setSelectedSubmission} />
+        ) : (
+          <div className="bg-gray-50 border border-black p-12 text-center">
+            <p className="text-sm font-bold uppercase tracking-widest text-gray-400">No pending finance tasks</p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -83,8 +89,8 @@ const FinanceOfficerDashboard: React.FC<FinanceOfficerDashboardProps> = ({
             onStatusFilterChange={setStatusFilter}
           />
         </div>
-        <SubmissionsTable 
-          submissions={displayedSubmissions} 
+        <SubmissionsTable
+          submissions={displayedSubmissions}
           onRowClick={setSelectedSubmission}
           userRole={user.role}
         />

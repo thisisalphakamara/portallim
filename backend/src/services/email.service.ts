@@ -73,11 +73,7 @@ class EmailService {
     }
 
     try {
-      const isConnected = await this.verifyConnection();
-      if (!isConnected) {
-        throw new AppError('Email service connection failed', 500);
-      }
-
+      // Removed redundant verifyConnection() to improve performance
       const mailOptions = {
         from: `"Limkokwing University" <${this.fromEmail}>`,
         to,
@@ -451,11 +447,7 @@ class EmailService {
     }
 
     try {
-      const isConnected = await this.verifyConnection();
-      if (!isConnected) {
-        throw new AppError('Email service connection failed', 500);
-      }
-
+      // Removed redundant verifyConnection() to improve performance
       const subject = `Registration Confirmation Slip - ${documentName}`;
       const html = this.generateDocumentEmailTemplate(studentName || 'Student', documentName);
 

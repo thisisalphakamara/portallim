@@ -72,7 +72,13 @@ const RegistrarDashboard: React.FC<RegistrarDashboardProps> = ({
 
       <div className="space-y-4">
         <h3 className="text-xl font-bold uppercase tracking-widest">Active Approval Tasks</h3>
-        <TasksTable tasks={myTasks} onReview={setSelectedSubmission} />
+        {myTasks.length > 0 ? (
+          <TasksTable tasks={myTasks} onReview={setSelectedSubmission} />
+        ) : (
+          <div className="bg-gray-50 border border-black p-12 text-center">
+            <p className="text-sm font-bold uppercase tracking-widest text-gray-400">No pending registrar tasks</p>
+          </div>
+        )}
       </div>
 
       <RegistrationSlipsSection submissions={submissions} registrarName={user.name} />

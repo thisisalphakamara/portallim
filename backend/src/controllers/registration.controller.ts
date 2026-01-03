@@ -89,20 +89,15 @@ export const submitRegistration = asyncHandler(async (req: any, res: Response) =
         NotificationType.INFO
     );
 
-    // Send email notification to student
-    try {
-        await emailService.sendRegistrationSubmissionNotification(
-            student.email,
-            student.fullName,
-            student.faculty?.name || 'Unknown Faculty',
-            student.program?.name || 'Unknown Program',
-            semester,
-            academicYear
-        );
-    } catch (emailError) {
-        console.error('Failed to send registration submission email:', emailError);
-        // Continue with response even if email fails
-    }
+    // Send email notification to student (non-blocking)
+    emailService.sendRegistrationSubmissionNotification(
+        student.email,
+        student.fullName,
+        student.faculty || 'Unknown Faculty',
+        student.program || 'Unknown Program',
+        semester,
+        academicYear
+    ).catch(err => console.error('Background email failed:', err));
 
     res.status(201).json({
         success: true,
@@ -244,54 +239,39 @@ export const approveRegistration = async (req: any, res: Response) => {
             );
         }
 
-        // Send email notification to student
-        try {
-            const nextStage = nextStatus === ApprovalStatus.PENDING_FINANCE ? 'Finance Department' :
-                nextStatus === ApprovalStatus.PENDING_REGISTRAR ? 'Registrar' :
-                    nextStatus === ApprovalStatus.APPROVED ? null : null;
+        // Send email notification to student (non-blocking)
+        const nextStage = nextStatus === ApprovalStatus.PENDING_FINANCE ? 'Finance Department' :
+            nextStatus === ApprovalStatus.PENDING_REGISTRAR ? 'Registrar' :
+                nextStatus === ApprovalStatus.APPROVED ? null : null;
 
-            if (nextStatus === ApprovalStatus.APPROVED) {
-                // Final approval
-                await emailService.sendFinalApprovalNotification(
-                    updated.student.email,
-                    updated.student.fullName,
-                    updated.faculty.name,
-                    updated.program?.name || 'Unknown Program',
-                    updated.semester,
-                    updated.academicYear
-                );
-            } else {
-                // Intermediate approval
-                const approvalData = {
-                    studentEmail: updated.student.email,
-                    studentName: updated.student.fullName,
-                    approverName: user.fullName,
-                    approverRole: currentStage,
-                    currentStage
-                };
+        if (nextStatus === ApprovalStatus.APPROVED) {
+            // Final approval
+            emailService.sendFinalApprovalNotification(
+                updated.student.email,
+                updated.student.fullName,
+                updated.faculty.name,
+                updated.program?.name || 'Unknown Program',
+                updated.semester,
+                updated.academicYear
+            ).catch(err => console.error('Background email failed:', err));
+        } else {
+            // Intermediate approval
+            const approvalData = {
+                studentEmail: updated.student.email,
+                studentName: updated.student.fullName,
+                approverName: user.fullName,
+                approverRole: currentStage,
+                currentStage
+            };
 
-                if (nextStage) {
-                    await emailService.sendApprovalNotification(
-                        approvalData.studentEmail,
-                        approvalData.studentName,
-                        approvalData.approverName,
-                        approvalData.approverRole,
-                        approvalData.currentStage,
-                        nextStage
-                    );
-                } else {
-                    await emailService.sendApprovalNotification(
-                        approvalData.studentEmail,
-                        approvalData.studentName,
-                        approvalData.approverName,
-                        approvalData.approverRole,
-                        approvalData.currentStage
-                    );
-                }
-            }
-        } catch (emailError) {
-            console.error('Failed to send approval email:', emailError);
-            // Continue with response even if email fails
+            emailService.sendApprovalNotification(
+                approvalData.studentEmail,
+                approvalData.studentName,
+                approvalData.approverName,
+                approvalData.approverRole,
+                approvalData.currentStage,
+                nextStage || undefined
+            ).catch(err => console.error('Background email failed:', err));
         }
 
         res.json({ success: true, submission: updated });
@@ -332,19 +312,14 @@ export const rejectRegistration = asyncHandler(async (req: any, res: Response) =
         NotificationType.ERROR
     );
 
-    // Send email notification to student
-    try {
-        await emailService.sendRejectionNotification(
-            updated.student.email,
-            updated.student.fullName,
-            user.fullName,
-            rejecterRole,
-            comments
-        );
-    } catch (emailError) {
-        console.error('Failed to send rejection email:', emailError);
-        // Continue with response even if email fails
-    }
+    // Send email notification to student (non-blocking)
+    emailService.sendRejectionNotification(
+        updated.student.email,
+        updated.student.fullName,
+        user.fullName,
+        rejecterRole,
+        comments
+    ).catch(err => console.error('Background email failed:', err));
 
     res.json({ success: true, submission: updated });
 });
