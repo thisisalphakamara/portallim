@@ -15,7 +15,16 @@ export const downloadRegistrationDocument = async (submissionId: string, documen
     });
 
     if (!response.ok) {
-        throw new Error('Failed to download document');
+        let errorMessage = 'Failed to download document';
+        try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+            // response was not JSON
+            errorMessage = `Failed to download: ${response.status} ${response.statusText}`;
+        }
+        console.error('Download error:', errorMessage);
+        throw new Error(errorMessage);
     }
 
     return response.blob();
