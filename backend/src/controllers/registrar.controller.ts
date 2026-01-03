@@ -211,9 +211,45 @@ export const deleteStudentAccount = asyncHandler(async (req: any, res: Response)
 
     // Delete from local database if exists
     if (existingUser) {
-        console.log('Deleting user from local database...');
+        console.log('Deleting user and related data from local database...');
+
+        // 1. Delete notifications
+        await prisma.notification.deleteMany({
+            where: { userId: existingUser.id }
+        });
+
+        // 2. Handle submissions and related data
+        const userSubmissions = await prisma.submission.findMany({
+            where: { studentId: existingUser.id }
+        });
+
+        for (const sub of userSubmissions) {
+            // Delete approval logs for this submission
+            await prisma.approvalLog.deleteMany({
+                where: { submissionId: sub.id }
+            });
+
+            // Delete registration documents for this submission
+            await prisma.registrationDocument.deleteMany({
+                where: { submissionId: sub.id }
+            });
+        }
+
+        // Delete the submissions themselves
+        await prisma.submission.deleteMany({
+            where: { studentId: existingUser.id }
+        });
+
+        // 3. Clear audit log references (AuditLog usually shouldn't be deleted for compliance, but we can nullify the target)
+        await prisma.auditLog.updateMany({
+            where: { targetUser: existingUser.id },
+            data: { targetUser: null }
+        });
+
+        // 4. Delete the user
         await prisma.user.delete({ where: { id: existingUser.id } });
-        console.log('User deleted from local database');
+
+        console.log('User and all related data deleted from local database');
     }
 
     // Delete from Supabase Auth if exists
