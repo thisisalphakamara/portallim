@@ -91,22 +91,80 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Student Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Student Details</h3>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">{safeRender(submission.studentName)}</p>
-                <p className="text-xs text-gray-600">{safeRender(submission.studentEmail)}</p>
-                <p className="text-xs text-gray-600">{safeRender(submission.phoneNumber)}</p>
+          {/* Student & Academic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-gray-100 pb-6">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-[2px] text-gray-400 mb-3">Student Identity</h3>
+                <div className="space-y-2 bg-gray-50 p-3 border border-gray-100 rounded">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Full Name:</span>
+                    <span className="font-bold">{safeRender(submission.studentName)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm text-mono">
+                    <span className="text-gray-500">Student ID:</span>
+                    <span className="font-bold">{safeRender(submission.academicStudentId || submission.studentId)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">National ID:</span>
+                    <span className="font-bold">{safeRender(submission.nationalId)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-[2px] text-gray-400 mb-3">Contact Information</h3>
+                <div className="space-y-2 bg-gray-50 p-3 border border-gray-100 rounded">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Email:</span>
+                    <span className="font-bold lowercase">{safeRender(submission.studentEmail)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Phone:</span>
+                    <span className="font-bold">{safeRender(submission.phoneNumber)}</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Academic Info</h3>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">{safeRender(submission.program)}</p>
-                <p className="text-xs text-gray-600">{safeRender(submission.faculty)}</p>
-                <p className="text-xs text-gray-600">{safeRender(submission.semester)} - {safeRender(submission.academicYear)}</p>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-[2px] text-gray-400 mb-3">Academic Placement</h3>
+                <div className="space-y-2 bg-gray-50 p-3 border border-gray-100 rounded">
+                  <div className="flex justify-between items-start text-sm">
+                    <span className="text-gray-500 min-w-[80px]">Program:</span>
+                    <span className="font-bold text-right">{safeRender(submission.program)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-mono">Faculty:</span>
+                    <span className="font-bold">{safeRender(submission.faculty)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Intake:</span>
+                    <span className="font-bold">{safeRender(submission.enrollmentIntake)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Year/Class:</span>
+                    <span className="font-bold">
+                      {submission.yearLevel ? `Year ${submission.yearLevel}` : 'N/A'}
+                      {submission.studentClass ? ` (${submission.studentClass})` : ''}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-[2px] text-gray-400 mb-3">Financial & Registration</h3>
+                <div className="space-y-2 bg-gray-50 p-3 border border-gray-100 rounded">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Sponsor:</span>
+                    <span className="font-bold">{safeRender(submission.sponsorType)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Term:</span>
+                    <span className="font-bold">{safeRender(submission.semester)} - {safeRender(submission.academicYear)}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
