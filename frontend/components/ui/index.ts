@@ -8,3 +8,4 @@ export { default as Badge } from './Badge';
 export { default as SearchBar } from './SearchBar';
 export { default as Modal } from './Modal';
 export { default as Textarea } from './Textarea';
+export { default as Switch } from './Switch';

@@ -4,6 +4,7 @@ import { User, UserRole } from '../types';
 import limlogo from '../assets/limlogo.png';
 import NotificationBell from './NotificationBell';
 import { useNotificationContext } from '../contexts/NotificationContext';
+import { useSystemSettings } from '../hooks/useSystemSettings';
 
 export type ActivePage = 'dashboard' | 'profile' | 'accounts' | 'approvals' | 'notifications';
 
@@ -19,6 +20,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [sidebarVisible, setSidebarVisible] = React.useState(true);
   const { unreadCount } = useNotificationContext();
+  const { settings } = useSystemSettings();
 
   const handleNavigate = (page: ActivePage) => {
     onNavigate(page);
@@ -117,6 +119,23 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activePage, o
               icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>}
             />
           </nav>
+
+          {/* Current Session Info */}
+          <div className="mx-3 mb-3 p-4 bg-gray-900 rounded-lg border border-gray-800">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Current Session</h4>
+            <div className="flex flex-col space-y-1">
+              <span className="text-sm font-bold text-white tracking-tight">{settings?.currentAcademicYear || 'Loading...'}</span>
+              <span className="text-xs text-gray-400 font-medium uppercase tracking-wide px-2 py-0.5 bg-gray-800 rounded-md w-fit">
+                {settings?.currentSession || '...'}
+              </span>
+            </div>
+            {settings && !settings.isRegistrationOpen && (
+              <div className="mt-2 text-[10px] text-red-500 font-bold uppercase tracking-widest flex items-center">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></span>
+                Registration Closed
+              </div>
+            )}
+          </div>
 
           <div className="p-4 border-t border-gray-800">
             <button

@@ -45,6 +45,7 @@ interface User {
 }
 
 import { getSystemStats, getAuditLogs, runSystemBackup, clearSystemCache, exportAuditLogs, getAllStaff, getStudents, deleteStaffAccount } from '../services/admin.service';
+import SettingsTab from './features/admin/SettingsTab';
 
 const SystemAdminDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'overview' | 'audit' | 'users' | 'settings'>('overview');
@@ -532,50 +533,7 @@ const SystemAdminDashboard: React.FC = () => {
       )}
 
       {activeSection === 'settings' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h4 className="text-sm font-bold uppercase tracking-widest mb-6">Registration Settings</h4>
-            <div className="space-y-4">
-              {[
-                { label: 'Registration Period Active', desc: 'Allow students to submit registrations' },
-                { label: 'Email Notifications', desc: 'Send email on registration status changes' }
-              ].map((setting, i) => (
-                <label key={i} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <div>
-                    <p className="text-sm font-bold">{setting.label}</p>
-                    <p className="text-xs text-gray-500">{setting.desc}</p>
-                  </div>
-                  <input type="checkbox" defaultChecked className="w-5 h-5 accent-black rounded" />
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h4 className="text-sm font-bold uppercase tracking-widest mb-6">Academic Year</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Select
-                label="Current Academic Year"
-                options={[
-                  { value: '2024/2025', label: '2024/2025' },
-                  { value: '2025/2026', label: '2025/2026' }
-                ]}
-              />
-              <Select
-                label="Current Semester"
-                options={[
-                  { value: '1', label: 'Semester 1' },
-                  { value: '2', label: 'Semester 2' },
-                  { value: '3', label: 'Semester Break' }
-                ]}
-              />
-            </div>
-          </div>
-
-          <div className="pt-4 flex justify-end">
-            <Button size="lg">Save All Settings</Button>
-          </div>
-        </div>
+        <SettingsTab />
       )}
 
       {/* Modal for detailed view */}

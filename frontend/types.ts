@@ -43,6 +43,7 @@ export interface User {
   sponsorType?: 'Self' | 'Parent' | 'Scholarship' | 'Other';
   enrollmentIntake?: string;
   registrationStatus?: string;
+  profilePhoto?: string;
 }
 
 export interface Module {
@@ -60,10 +61,13 @@ export interface RegistrationSubmission {
   studentEmail: string;
   phoneNumber: string;
   nationalId?: string;
+  profilePhoto?: string;
   faculty: string;
   program: string;
   semester: string;
   academicYear: string;
+  calendarYear?: string;
+  sessionPeriod?: string;
   enrollmentIntake: string;
   yearLevel: number;
   studentClass?: string;

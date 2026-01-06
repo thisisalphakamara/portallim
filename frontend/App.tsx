@@ -8,12 +8,15 @@ import SystemAdminDashboard from './components/SystemAdminDashboard';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import StudentAccountsList from './components/StudentAccountsList';
 import NotificationsPage from './components/NotificationsPage';
+import SystemOffline from './components/SystemOffline';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { User, UserRole, RegistrationSubmission, RegistrationStatus } from './types';
 import limlogo from './assets/limlogo.png';
 import { login as apiLogin, logout as apiLogout, getCurrentUserProfile, changePassword as apiChangePassword } from './services/auth.service';
 import { getRegistrations, approveRegistration, rejectRegistration, submitRegistration } from './services/registration.service';
 import { getAllStaff, getStudents } from './services/admin.service';
+import { getSystemSettings } from './services/settings.service';
+import { useSystemSettings } from './hooks/useSystemSettings';
 
 
 
@@ -32,10 +35,13 @@ const App: React.FC = () => {
   const [loginLocked, setLoginLocked] = useState(false);
   const [lockedUntil, setLockedUntil] = useState<string | null>(null);
 
+  const { settings, loading: settingsLoading } = useSystemSettings();
+
   // Check for existing session on mount
   useEffect(() => {
     checkSession();
   }, []);
+
 
   // Load registrations when user logs in
   useEffect(() => {
@@ -284,7 +290,7 @@ const App: React.FC = () => {
   };
 
   // Show loading state while checking session
-  if (isLoading) {
+  if (isLoading || settingsLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -384,7 +390,11 @@ const App: React.FC = () => {
     );
   }
 
-  const studentSubmission = submissions.find(s => s.studentId === user.id) || null;
+  const studentSubmission = submissions.find(s =>
+    s.studentId === user.id &&
+    ((!settings?.currentAcademicYear || s.calendarYear === settings.currentAcademicYear) &&
+      (!settings?.currentSession || s.sessionPeriod === settings.currentSession))
+  ) || null;
 
   const renderContent = () => {
     if (!user) return null;
@@ -416,6 +426,9 @@ const App: React.FC = () => {
           user={user}
           onSubmitted={handleRegistrationSubmit}
           existingSubmission={studentSubmission}
+          academicYear={settings?.currentAcademicYear}
+          session={settings?.currentSession}
+          isRegistrationOpen={settings?.isRegistrationOpen}
         />
       );
     }
@@ -427,6 +440,15 @@ const App: React.FC = () => {
 
     // Staff dashboard (Year Leader, Finance, Registrar)
     if (activePage === 'dashboard') {
+      if (settings?.isRegistrationOpen === false) {
+        return (
+          <SystemOffline
+            currentSession={settings?.currentSession}
+            currentAcademicYear={settings?.currentAcademicYear}
+          />
+        );
+      }
+
       return (
         <StaffDashboard
           user={user}

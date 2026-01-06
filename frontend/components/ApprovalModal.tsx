@@ -112,6 +112,20 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                 </div>
               </div>
 
+              {/* Profile Photo - Visible to Staff */}
+              {(submission as any).student?.profilePhoto && (
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-[2px] text-gray-400 mb-3">Profile Photo</h3>
+                  <div className="w-32 h-32 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                    <img
+                      src={(submission as any).student.profilePhoto}
+                      alt="Student Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <h3 className="text-[10px] font-black uppercase tracking-[2px] text-gray-400 mb-3">Contact Information</h3>
                 <div className="space-y-2 bg-gray-50 p-3 border border-gray-100 rounded">

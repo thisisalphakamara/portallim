@@ -11,6 +11,9 @@ import dataRoutes from './routes/data.routes';
 import emailRoutes from './routes/email.routes';
 import documentRoutes from './routes/document.routes';
 import notificationRoutes from './routes/notification.routes';
+import userRoutes from './routes/user.routes';
+
+import settingsRoutes from './routes/settings.routes';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -48,6 +51,8 @@ app.use('/api/registrations', documentRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/settings', settingsRoutes);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' });

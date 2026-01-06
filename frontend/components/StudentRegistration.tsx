@@ -7,7 +7,8 @@ import {
   ModuleSelectionStep,
   ReviewStep,
   RegistrationConfirmation,
-  RegistrationPending
+  RegistrationPending,
+  RegistrationClosed
 } from './features/registration';
 import { getYearForSemester, generateSubmissionId } from '../utils';
 import { getModulesByFaculty } from '../services/admin.service';
@@ -16,12 +17,18 @@ interface StudentRegistrationProps {
   user: User;
   onSubmitted: (submission: RegistrationSubmission) => void;
   existingSubmission: RegistrationSubmission | null;
+  academicYear?: string;
+  session?: string;
+  isRegistrationOpen?: boolean;
 }
 
 const StudentRegistration: React.FC<StudentRegistrationProps> = ({
   user,
   onSubmitted,
-  existingSubmission
+  existingSubmission,
+  academicYear: currentAcademicYear,
+  session: currentSession,
+  isRegistrationOpen
 }) => {
   const [step, setStep] = useState(1);
   const [semester, setSemester] = useState('Semester 1');
@@ -35,6 +42,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
     user.enrollmentIntake || new Date().toISOString().slice(0, 7)
   );
   const [studentClass, setStudentClass] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState(user.profilePhoto);
 
   useEffect(() => {
     if (user.enrollmentIntake) {
@@ -122,6 +130,8 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
       program: user.program || 'Not assigned',
       semester,
       academicYear,
+      calendarYear: currentAcademicYear,
+      sessionPeriod: currentSession,
       yearLevel: parseInt(academicYear.replace('Year ', ''), 10) || 1,
       enrollmentIntake: enrollmentMonthYear,
       sponsorType: sponsorType as 'Self' | 'Parent' | 'Scholarship' | 'Other',
@@ -134,12 +144,29 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
     onSubmitted(submission);
   };
 
+  // Guard: Check if registration is open (only if no existing submission)
+  // If they have a submission, they should still see it (handled above by existingSubmission check)
+  if (isRegistrationOpen === false) {
+    return (
+      <RegistrationClosed
+        academicYear={currentAcademicYear || '-'}
+        session={currentSession || '-'}
+      />
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
         <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter mb-2">
           Semester Registration
         </h2>
+        {currentAcademicYear && currentSession && (
+          <div className="mb-4 inline-flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span>{currentSession}, {currentAcademicYear}</span>
+          </div>
+        )}
         <div className="flex items-center space-x-3">
           <StepIndicator current={step} step={1} label="Profile" />
           <StepIndicator current={step} step={2} label="Modules" />
@@ -162,6 +189,8 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
             onEnrollmentMonthYearChange={setEnrollmentMonthYear}
             studentClass={studentClass}
             onStudentClassChange={setStudentClass}
+            profilePhoto={profilePhoto}
+            onProfilePhotoChange={setProfilePhoto}
             onNext={() => setStep(2)}
           />
         )}
@@ -188,6 +217,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
             onBack={() => setStep(2)}
             onSubmit={handleSubmit}
             enrollmentMonthYear={enrollmentMonthYear}
+            profilePhoto={profilePhoto}
           />
         )}
       </div>

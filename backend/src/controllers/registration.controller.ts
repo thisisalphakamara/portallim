@@ -34,16 +34,30 @@ export const submitRegistration = asyncHandler(async (req: any, res: Response) =
         }
     }
 
+    // Fetch current system settings
+    let calendarYear = '2025/2026';
+    let sessionPeriod = 'March - June';
+
+    const settings = await prisma.systemSettings.findFirst();
+    if (settings) {
+        calendarYear = settings.currentAcademicYear;
+        sessionPeriod = settings.currentSession;
+
+        if (!settings.isRegistrationOpen) {
+            throw new AppError('Registration is currently closed', 403);
+        }
+    }
+
     const existingSubmission = await prisma.submission.findFirst({
         where: {
             studentId: student.id,
-            semester,
-            academicYear
+            calendarYear,
+            sessionPeriod
         }
     });
 
     if (existingSubmission) {
-        throw new AppError(`Registration already submitted for ${semester} ${academicYear}. You cannot submit multiple registrations for the same semester.`, 409);
+        throw new AppError(`You have already submitted a registration for ${sessionPeriod} ${calendarYear}.`, 409);
     }
 
     // Update user's profile details if provided
@@ -63,6 +77,8 @@ export const submitRegistration = asyncHandler(async (req: any, res: Response) =
             programId: student.programId,
             semester,
             academicYear,
+            calendarYear,
+            sessionPeriod,
             enrollmentIntake,
             yearLevel,
             class: studentClass,
@@ -143,10 +159,14 @@ export const getRegistrations = async (req: any, res: Response) => {
             academicStudentId: reg.student.studentId, // Add the academic student ID as a separate field
             phoneNumber: reg.student.phoneNumber || '',
             nationalId: reg.student.nationalId,
+            profilePhoto: reg.student.profilePhoto,
             sponsorType: reg.student.sponsorType,
             studentClass: reg.class,
             faculty: reg.faculty.name,
             program: reg.program.name,
+            calendarYear: reg.calendarYear,
+            sessionPeriod: reg.sessionPeriod,
+            submissionSemester: reg.semester,
             approvalHistory: reg.approvalLogs.map(log => ({
                 role: log.user.role,
                 approvedBy: log.user.fullName,
